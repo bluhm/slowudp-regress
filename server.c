@@ -144,6 +144,7 @@ socket_read(int s, struct event_addr *ea)
 				err(1, "close");
 			event_del(&ea->ea_event);
 			free(ea);
+			stat_open--;
 			return;
 		}
 	} else {
@@ -197,13 +198,13 @@ socket_read(int s, struct event_addr *ea)
 		    EV_TIMEOUT, socket_callback, ef);
 
 		ea = ef;
+		stat_open++;
 	}
 
 	stat_recv++;
 	to.tv_sec = arc4random_uniform(delay_bound);
 	to.tv_usec = 1 + arc4random_uniform(999999);
 	event_add(&ea->ea_event, &to);
-	stat_open++;
 }
 
 void
@@ -216,13 +217,21 @@ socket_callback(int s, short event, void *arg)
 	}
 	if (event & EV_TIMEOUT) {
 		const char	 wbuf[] = "bar\n";
+		ssize_t		 n;
 
 		/*
 		 * The delay for the response is over.  Send it and
 		 * destroy the event structure.
 		 */
-		if (sendto(s, wbuf, sizeof(wbuf) - 1, 0, (struct sockaddr *)
-		    &ea->ea_faddr, ea->ea_faddrlen) == -1)
+		if (connected) {
+			n = send(s, wbuf, sizeof(wbuf) - 1, 0);
+			if (close(s) == -1)
+				err(1, "close");
+		} else {
+			n = sendto(s, wbuf, sizeof(wbuf) - 1, 0,
+			    (struct sockaddr *)&ea->ea_faddr, ea->ea_faddrlen);
+		}
+		if (n == -1)
 			stat_snderr++;
 		else
 			stat_send++;
