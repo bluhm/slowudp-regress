@@ -130,8 +130,8 @@ main(int argc, char *argv[])
 void
 socket_read(int s, struct event_addr *ea)
 {
-	struct timeval		 to;
-	char			 rbuf[16];
+	struct timeval	 to;
+	char		 rbuf[16];
 
 	if (ea->ea_faddrlen) {
 		/*
