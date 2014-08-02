@@ -218,8 +218,13 @@ socket_callback(int s, short event, void *arg)
 	stat_open--;
 	if (!oneshot)
 		socket_start();
-	if (stat_open == 0)
+	if (oneshot && stat_open == 0) {
+		if (!connected) {
+			event_del(&etime->et_event);
+			free(etime);
+		}
 		statistic_destroy();
+	}
 }
 
 void
@@ -285,7 +290,8 @@ socket_init(void)
 	} else {
 		if ((etime = malloc(sizeof(*etime))) == NULL)
 			err(1, "malloc");
-		event_set(&etime->et_event, s, EV_READ, socket_callback, etime);
+		event_set(&etime->et_event, s, EV_READ|EV_PERSIST,
+		    socket_callback, etime);
 		event_add(&etime->et_event, NULL);
 	}
 
