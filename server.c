@@ -34,6 +34,7 @@ struct event_addr {
 	struct event		 ea_event;
 	struct sockaddr_storage  ea_faddr;
 	const struct sockaddr   *ea_laddr;
+	int			 ea_family, ea_socktype, ea_protocol;
 	socklen_t                ea_laddrlen, ea_faddrlen;
 };
 
