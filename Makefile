@@ -1,5 +1,5 @@
 SRCS =		sudpclient.c sudpserver.c
-CLEANFILES +=	*.o sudpclient sudpserver
+CLEANFILES +=	*.o ktrace.out sudpclient sudpserver
 CDIAGFLAGS +=	-Wall -Werror \
 		-Wbad-function-cast \
 		-Wcast-align \

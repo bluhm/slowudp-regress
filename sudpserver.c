@@ -42,6 +42,7 @@ void	 socket_init(void);
 void	 socket_callback(int, short, void *);
 
 struct event_base	*eb;
+struct event_addr	*eladdr;
 struct event		 evstat;
 const char		*host, *port;
 unsigned int		 reply_bound = 10;
@@ -139,27 +140,27 @@ socket_callback(int s, short event, void *arg)
 	struct event_addr	*ea = arg;
 
 	if (event & EV_READ) {
-		struct event_addr	*eaddr;
+		struct event_addr	*efaddr;
 		char			 rbuf[16];
 
-		if ((eaddr = malloc(sizeof(*eaddr))) == NULL)
+		if ((efaddr = malloc(sizeof(*efaddr))) == NULL)
 			err(1, "malloc");
-		eaddr->ea_laddr = ea->ea_laddr;
-		eaddr->ea_laddrlen = ea->ea_laddrlen;
-		event_set(&eaddr->ea_event, s, EV_TIMEOUT, socket_callback,
-		    eaddr);
+		efaddr->ea_laddr = ea->ea_laddr;
+		efaddr->ea_laddrlen = ea->ea_laddrlen;
+		event_set(&efaddr->ea_event, s, EV_TIMEOUT, socket_callback,
+		    efaddr);
 
 		if (recvfrom(s, rbuf, sizeof(rbuf), 0, (struct sockaddr *)
-		    &eaddr->ea_faddr, &eaddr->ea_faddrlen) == -1) {
+		    &efaddr->ea_faddr, &efaddr->ea_faddrlen) == -1) {
 			stat_errors++;
-			free(eaddr);
+			free(efaddr);
 		} else {
 			struct timeval		 to;
 
 			stat_reads++;
 			to.tv_sec = arc4random_uniform(reply_bound);
 			to.tv_usec = 1 + arc4random_uniform(999999);
-			event_add(&eaddr->ea_event, &to);
+			event_add(&efaddr->ea_event, &to);
 			stat_open++;
 		}
 	}
@@ -175,6 +176,16 @@ socket_callback(int s, short event, void *arg)
 		stat_open--;
 
 	}
+        if (oneshot && stat_open == 0) {
+		for (ea = eladdr; ea->ea_laddr; ea++)
+			event_del(&ea->ea_event);
+#if 0
+		free(eladdr);
+#endif
+                if (statistics)
+                        statistic_callback(SIGINFO, 0, &evstat);
+                event_del(&evstat);
+        }
 }
 
 void
@@ -239,7 +250,7 @@ socket_init(void)
 		err(1, "%s: address %s, service %s", cause, address, service);
         /* don't call freeaddrinfo(res0), addr is still referenced */
 
-	if ((ea = calloc(nsock, sizeof(*ea))) == NULL)
+	if ((ea = eladdr = calloc(nsock, sizeof(*ea))) == NULL)
 		err(1, "calloc");
 	for (n = 0; n < nsock; n++, ea++) {
 		event_set(&ea->ea_event, s[n], EV_READ|EV_PERSIST,
