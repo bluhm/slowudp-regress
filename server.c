@@ -148,12 +148,12 @@ socket_callback(int s, short event, void *arg)
 		stat_open--;
 
 	}
-        if (oneshot && stat_open == 0) {
+	if (oneshot && stat_open == 0) {
 		for (ea = eladdr; ea->ea_laddr; ea++)
 			event_del(&ea->ea_event);
 		free(eladdr);
 		statistic_destroy();
-        }
+	}
 }
 
 void
@@ -216,7 +216,7 @@ socket_init(void)
 	}
 	if (nsock == 0)
 		err(1, "%s: address %s, service %s", cause, address, service);
-        /* don't call freeaddrinfo(res0), addr is still referenced */
+	/* don't call freeaddrinfo(res0), addr is still referenced */
 
 	if ((ea = eladdr = calloc(nsock + 1, sizeof(*ea))) == NULL)
 		err(1, "calloc");
