@@ -166,7 +166,7 @@ socket_write(int s, struct event_time *et)
 	if (send(s, wbuf, sizeof(wbuf) - 1, 0) == -1)
 		stat_errors++;
 	else
-		stat_writes++;
+		stat_send++;
 
 	/*
 	 * Chose a random resend timeout.  If it is greater than the wait
@@ -195,7 +195,7 @@ socket_callback(int s, short event, void *arg)
 		if (recv(s, rbuf, sizeof(rbuf), 0) == -1)
 			stat_errors++;
 		else
-			stat_reads++;
+			stat_recv++;
 	}
 	if (event & EV_TIMEOUT) {
 		/*

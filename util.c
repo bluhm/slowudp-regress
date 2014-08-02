@@ -27,7 +27,7 @@ void	 statistic_callback(int, short, void *);
 
 struct event		 evstat;
 int			 statistics;
-unsigned int		 stat_open, stat_reads, stat_writes, stat_errors;
+unsigned int		 stat_open, stat_recv, stat_send, stat_errors;
 
 void
 statistic_init(void)
@@ -46,18 +46,18 @@ statistic_callback(int sig, short event, void *arg)
 	static int	 line;
 
 	if (line-- == 0 || (event & EV_SIGNAL)) {
-		printf(" %7s %7s %7s %7s\n", "open", "read", "write", "error");
+		printf(" %7s %7s %7s %7s\n", "open", "recv", "send", "error");
 		line = 19;
 	}
 	printf(" %7d %7d %7d %7d\n",
-	    stat_open, stat_reads, stat_writes, stat_errors);
+	    stat_open, stat_recv, stat_send, stat_errors);
 	if (event & EV_TIMEOUT) {
 		struct timeval	 to;
 
 		to.tv_sec = 1;
 		to.tv_usec = 0;
 		signal_add(evs, &to);
-		stat_reads = stat_writes = stat_errors = 0;
+		stat_recv = stat_send = stat_errors = 0;
 	}
 }
 

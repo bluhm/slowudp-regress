@@ -151,7 +151,7 @@ socket_callback(int s, short event, void *arg)
 		} else {
 			struct timeval		 to;
 
-			stat_reads++;
+			stat_recv++;
 			to.tv_sec = arc4random_uniform(delay_bound);
 			to.tv_usec = 1 + arc4random_uniform(999999);
 			event_add(&efaddr->ea_event, &to);
@@ -169,7 +169,7 @@ socket_callback(int s, short event, void *arg)
 		    &ea->ea_faddr, ea->ea_faddrlen) == -1)
 			stat_errors++;
 		else
-			stat_writes++;
+			stat_send++;
 		free(ea);
 		stat_open--;
 
