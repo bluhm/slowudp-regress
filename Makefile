@@ -22,9 +22,9 @@ regress: sudpclient sudpserver
 	cd ${.CURDIR} && ${MAKE} -j 2 run-regress-client run-regress-server
 
 run-regress-client: sudpclient
-	./sudpclient -o localhost 4019
+	./sudpclient -os localhost 4019
 run-regress-server: sudpserver
-	./sudpserver -o 4019
+	./sudpserver -os 4019
 
 sudpclient: client.o util.o
 	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} client.o util.o ${LDADD}
