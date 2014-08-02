@@ -244,12 +244,13 @@ findaddr(void)
 void
 usage(void)
 {
-	(void)fprintf(stderr, "usage: %s [-norsw] host port\n"
+	(void)fprintf(stderr,
+	    "usage: %s [-os] [-n num] [-r retry] [-w wait] host port\n"
 	    "    -n  number of simultanously connected sockets (%u)\n"
 	    "    -o  oneshot, do not reopen socket\n"
-	    "    -r  maximum retry timeout (%u)\n"
+	    "    -r  maximum retry query timeout (%u)\n"
 	    "    -s  print statistics every second\n"
-	    "    -w  maximum wait timeout (%u)\n",
+	    "    -w  maximum wait for reply timeout (%u)\n",
 	    getprogname(), socket_number, retry_bound, wait_bound);
 	exit(2);
 }

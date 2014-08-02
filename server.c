@@ -235,11 +235,12 @@ socket_init(void)
 void
 usage(void)
 {
-	(void)fprintf(stderr, "usage: %s [-bnorsw] port\n"
+	(void)fprintf(stderr,
+	    "usage: %s [-os] [-b bind] [-n num] [-r reply] port\n"
 	    "    -b  bind address\n"
-	    "    -n  number of simultanously connected sockets (%u)\n"
+	    "    -n  maximum number of simultanously bound sockets (%u)\n"
 	    "    -o  oneshot, do not reopen socket\n"
-	    "    -r  maximum reply timeout (%u)\n"
+	    "    -r  maximum reply response timeout (%u)\n"
 	    "    -s  print statistics every second\n",
 	    getprogname(), socket_number, reply_bound);
 	exit(2);
