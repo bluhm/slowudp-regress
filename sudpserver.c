@@ -179,9 +179,7 @@ socket_callback(int s, short event, void *arg)
         if (oneshot && stat_open == 0) {
 		for (ea = eladdr; ea->ea_laddr; ea++)
 			event_del(&ea->ea_event);
-#if 0
 		free(eladdr);
-#endif
                 if (statistics)
                         statistic_callback(SIGINFO, 0, &evstat);
                 event_del(&evstat);
@@ -250,7 +248,7 @@ socket_init(void)
 		err(1, "%s: address %s, service %s", cause, address, service);
         /* don't call freeaddrinfo(res0), addr is still referenced */
 
-	if ((ea = eladdr = calloc(nsock, sizeof(*ea))) == NULL)
+	if ((ea = eladdr = calloc(nsock + 1, sizeof(*ea))) == NULL)
 		err(1, "calloc");
 	for (n = 0; n < nsock; n++, ea++) {
 		event_set(&ea->ea_event, s[n], EV_READ|EV_PERSIST,
