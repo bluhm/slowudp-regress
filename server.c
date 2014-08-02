@@ -130,34 +130,67 @@ main(int argc, char *argv[])
 void
 socket_read(int s, struct event_addr *ea)
 {
-	struct event_addr	*ef;
 	struct timeval		 to;
 	char			 rbuf[16];
 
-	/*
-	 * Create an event that is used to send the resonse.  The
-	 * local address is the same as we used to bind the socket
-	 * where we received the packet.  The foreign address is
-	 * taken from the query packet.  The response gets delayed.
-	 */
-	if ((ef = malloc(sizeof(*ef))) == NULL)
-		err(1, "malloc");
-	ef->ea_laddr = ea->ea_laddr;
-	ef->ea_laddrlen = ea->ea_laddrlen;
-	event_set(&ef->ea_event, s, EV_TIMEOUT, socket_callback, ef);
+	if (ea->ea_faddrlen) {
+		/*
+		 * The socket is already conntect to the foreign address.
+		 * Just read the packet.
+		 */
+		if (recv(s, rbuf, sizeof(rbuf), 0) == -1) {
+			stat_rcverr++;
+			if (close(s) == -1)
+				err(1, "close");
+			event_del(&ea->ea_event);
+			free(ea);
+			return;
+		}
+	} else {
+		/*
+		 * Create an event that is used to send the resonse.  The
+		 * local address is the same as we used to bind the socket
+		 * where we received the packet.  The foreign address is
+		 * taken from the query packet.  The response gets delayed.
+		 */
+		struct event_addr	*ef;
 
-	ef->ea_faddrlen = sizeof(ef->ea_faddr);
-	if (recvfrom(s, rbuf, sizeof(rbuf), 0, (struct sockaddr *)
-	    &ef->ea_faddr, &ef->ea_faddrlen) == -1) {
-		stat_rcverr++;
-		free(ef);
-		return;
+		if ((ef = malloc(sizeof(*ef))) == NULL)
+			err(1, "malloc");
+		ef->ea_laddrlen = ef->ea_faddrlen = 0;
+
+		ef->ea_faddrlen = sizeof(ef->ea_faddr);
+		if (recvfrom(s, rbuf, sizeof(rbuf), 0, (struct sockaddr *)
+		    &ef->ea_faddr, &ef->ea_faddrlen) == -1) {
+			stat_rcverr++;
+			free(ef);
+			return;
+		}
+		if (connected) {
+			/*
+			 * We should use a connected socket, but received
+			 * the packet on the unconnected bind socket.  So
+			 * we need an additional socket.
+			 */
+			if ((s = socket(ea->ea_family, ea->ea_socktype,
+			    ea->ea_protocol)) == -1)
+				err(1, "socket");
+			if (bind(s, ea->ea_laddr, ea->ea_laddrlen) == -1)
+				err(1, "bind");
+			if (connect(s, (struct sockaddr *)&ef->ea_faddr,
+			    ef->ea_faddrlen) == -1)
+				err(1, "connect");
+		}
+		event_set(&ef->ea_event, s, connected ? EV_READ|EV_TIMEOUT :
+		    EV_TIMEOUT, socket_callback, ef);
+
+		ea = ef;
 	}
 
 	stat_recv++;
 	to.tv_sec = arc4random_uniform(delay_bound);
 	to.tv_usec = 1 + arc4random_uniform(999999);
-	event_add(&ef->ea_event, &to);
+	event_add(&ea->ea_event, &to);
 	stat_open++;
 }
 
