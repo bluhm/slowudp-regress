@@ -172,9 +172,15 @@ socket_read(int s, struct event_addr *ea)
 			 * the packet on the unconnected bind socket.  So
 			 * we need an additional socket.
 			 */
+			int	 optval;
+
 			if ((s = socket(ea->ea_family, ea->ea_socktype,
 			    ea->ea_protocol)) == -1)
 				err(1, "socket");
+			optval = 1;
+			if (setsockopt(s, SOL_SOCKET, SO_REUSEPORT,
+			    &optval, sizeof(optval)) == -1)
+				err(1, "setsockopt");
 			if (bind(s, ea->ea_laddr, ea->ea_laddrlen) == -1)
 				err(1, "bind");
 			if (connect(s, (struct sockaddr *)&ef->ea_faddr,
@@ -282,6 +288,13 @@ socket_init(void)
 			continue;
 		}
 
+		if (connected) {
+			int	 optval = 1;
+
+			if (setsockopt(s[nsock], SOL_SOCKET, SO_REUSEPORT,
+			    &optval, sizeof(optval)) == -1)
+				err(1, "setsockopt");
+		}
 		if (bind(s[nsock], res->ai_addr, res->ai_addrlen) == -1) {
 			cause = "bind";
 			save_errno = errno;
