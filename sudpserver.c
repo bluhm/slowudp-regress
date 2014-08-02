@@ -239,7 +239,7 @@ socket_init(void)
 			continue;
 		}
 
-		printf("bind to address %s, service %s\n", address, service);
+		printf("bind address %s, service %s\n", address, service);
 		addr[nsock] = res->ai_addr;
 		addrlen[nsock] = res->ai_addrlen;
 		nsock++;

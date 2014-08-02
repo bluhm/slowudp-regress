@@ -110,7 +110,7 @@ main(int argc, char *argv[])
 
 	if ((eb = event_init()) == NULL)
 		err(1, "event_init");
-	printf("connect to address %s, service %s\n", address, service);
+	printf("connect address %s, service %s\n", address, service);
 	for (n = 0; n < socket_number; n++)
 		socket_init();
 	signal_set(&evstat, SIGINFO, statistic_callback, &evstat);
