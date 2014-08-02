@@ -42,6 +42,7 @@ void	 socket_write(int, struct event_time *);
 void	 socket_callback(int, short, void *);
 
 struct event_base	*eb;
+struct event_time	*etime;
 const char		*host, *port;
 int			 family = PF_UNSPEC;
 unsigned int		 resend_bound = 10, wait_bound = 30;
@@ -269,19 +270,20 @@ findaddr(void)
 	}
 	if (s == -1)
 		err(1, "%s", cause);
-	if (close(s) == -1)
-		err(1, "close");
+	addr = res->ai_addr;
+	addrlen = res->ai_addrlen;
 	family = res->ai_family;
 	socktype = res->ai_socktype;
 	protocol= res->ai_protocol;
-	addr = res->ai_addr;
-	addrlen = res->ai_addrlen;
 	/* don't call freeaddrinfo(res0), addr is still referenced */
 
 	error = getnameinfo(addr, addrlen, address, sizeof(address), service,
 	    sizeof(service), NI_NUMERICHOST | NI_NUMERICSERV);
 	if (error)
 		errx(1, "getnameinfo: %s", gai_strerror(error));
+
+	if (close(s) == -1)
+		err(1, "close");
 }
 
 void
