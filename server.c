@@ -137,7 +137,7 @@ socket_callback(int s, short event, void *arg)
 		}
 	}
 	if (event & EV_TIMEOUT) {
-		const char	 wbuf[] = "foo\n";
+		const char	 wbuf[] = "bar\n";
 
 		if (sendto(s, wbuf, sizeof(wbuf) - 1, 0, (struct sockaddr *)
 		    &ea->ea_faddr, ea->ea_faddrlen) == -1)
