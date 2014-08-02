@@ -255,7 +255,8 @@ findaddr(void)
 		if (connect(s, res->ai_addr, res->ai_addrlen) == -1) {
 			cause = "connect";
 			save_errno = errno;
-			close(s);
+			if (close(s) == -1)
+				err(1, "close");
 			errno = save_errno;
 			s = -1;
 			continue;
@@ -265,7 +266,8 @@ findaddr(void)
 	}
 	if (s == -1)
 		err(1, "%s", cause);
-	close(s);
+	if (close(s) == -1)
+		err(1, "close");
 	family = res->ai_family;
 	socktype = res->ai_socktype;
 	protocol= res->ai_protocol;
