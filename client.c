@@ -46,7 +46,7 @@ const char		*host, *port;
 int			 family = PF_UNSPEC;
 unsigned int		 resend_bound = 10, wait_bound = 30;
 unsigned int		 socket_number = 1000;
-int			 oneshot = 0;
+int			 connected, oneshot;
 const struct sockaddr	*addr;
 socklen_t		 addrlen;
 int			 socktype, protocol;
@@ -60,13 +60,16 @@ main(int argc, char *argv[])
 	unsigned int	 n;
 	int		 ch;
 
-	while ((ch = getopt(argc, argv, "46n:or:sw:")) != -1) {
+	while ((ch = getopt(argc, argv, "46cn:or:sw:")) != -1) {
 		switch (ch) {
 		case '4':
 			family = PF_INET;
 			break;
 		case '6':
 			family = PF_INET6;
+			break;
+		case 'c':
+			connected = 1;
 			break;
 		case 'n':
 			socket_number = strtonum(optarg, 1, 10000, &errstr);
@@ -285,9 +288,10 @@ void
 usage(void)
 {
 	(void)fprintf(stderr,
-	    "usage: %s [-46os] [-n num] [-r resend] [-w wait] host port\n"
+	    "usage: %s [-46cos] [-n num] [-r resend] [-w wait] host port\n"
 	    "    -4  IPv4 only\n"
 	    "    -6  IPv6 only\n"
+	    "    -c  use connected sockets to send packets\n"
 	    "    -n  number of simultanously connected sockets (%u)\n"
 	    "    -o  oneshot, do not reopen socket\n"
 	    "    -r  maximum resend timeout for the query in seconds (%u)\n"
