@@ -39,6 +39,7 @@ struct event_addr {
 
 void	 usage(void);
 void	 socket_init(void);
+void	 socket_read(int, struct event_addr *);
 void	 socket_callback(int, short, void *);
 
 struct event_base	*eb;
@@ -126,40 +127,46 @@ main(int argc, char *argv[])
 }
 
 void
+socket_read(int s, struct event_addr *ea)
+{
+	struct event_addr	*efaddr;
+	char			 rbuf[16];
+
+	/*
+	 * Create an event that is used to send the resonse.  The
+	 * local address is the same as we used to bind the socket
+	 * where we received the packet.  The foreign address is
+	 * taken from the query packet.  The response gets delayed.
+	 */
+	if ((efaddr = malloc(sizeof(*efaddr))) == NULL)
+		err(1, "malloc");
+	efaddr->ea_laddr = ea->ea_laddr;
+	efaddr->ea_laddrlen = ea->ea_laddrlen;
+	event_set(&efaddr->ea_event, s, EV_TIMEOUT, socket_callback,
+	    efaddr);
+
+	if (recvfrom(s, rbuf, sizeof(rbuf), 0, (struct sockaddr *)
+	    &efaddr->ea_faddr, &efaddr->ea_faddrlen) == -1) {
+		stat_rcverr++;
+		free(efaddr);
+	} else {
+		struct timeval		 to;
+
+		stat_recv++;
+		to.tv_sec = arc4random_uniform(delay_bound);
+		to.tv_usec = 1 + arc4random_uniform(999999);
+		event_add(&efaddr->ea_event, &to);
+		stat_open++;
+	}
+}
+
+void
 socket_callback(int s, short event, void *arg)
 {
 	struct event_addr	*ea = arg;
 
 	if (event & EV_READ) {
-		struct event_addr	*efaddr;
-		char			 rbuf[16];
-
-		/*
-		 * Create an event that is used to send the resonse.  The
-		 * local address is the same as we used to bind the socket
-		 * where we received the packet.  The foreign address is
-		 * taken from the query packet.  The response gets delayed.
-		 */
-		if ((efaddr = malloc(sizeof(*efaddr))) == NULL)
-			err(1, "malloc");
-		efaddr->ea_laddr = ea->ea_laddr;
-		efaddr->ea_laddrlen = ea->ea_laddrlen;
-		event_set(&efaddr->ea_event, s, EV_TIMEOUT, socket_callback,
-		    efaddr);
-
-		if (recvfrom(s, rbuf, sizeof(rbuf), 0, (struct sockaddr *)
-		    &efaddr->ea_faddr, &efaddr->ea_faddrlen) == -1) {
-			stat_rcverr++;
-			free(efaddr);
-		} else {
-			struct timeval		 to;
-
-			stat_recv++;
-			to.tv_sec = arc4random_uniform(delay_bound);
-			to.tv_usec = 1 + arc4random_uniform(999999);
-			event_add(&efaddr->ea_event, &to);
-			stat_open++;
-		}
+		socket_read(s, ea);
 	}
 	if (event & EV_TIMEOUT) {
 		const char	 wbuf[] = "bar\n";
