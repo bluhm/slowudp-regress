@@ -23,11 +23,12 @@
 #include <errno.h>
 #include <event.h>
 #include <netdb.h>
-#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
+#include "util.h"
 
 struct event_addr {
 	struct event		 ea_event;
@@ -37,18 +38,15 @@ struct event_addr {
 };
 
 void	 usage(void);
-void	 statistic_callback(int, short, void *);
 void	 socket_init(void);
 void	 socket_callback(int, short, void *);
 
 struct event_base	*eb;
 struct event_addr	*eladdr;
-struct event		 evstat;
 const char		*host, *port;
 unsigned int		 reply_bound = 10;
 unsigned int		 socket_number = 1000;
-int			 oneshot = 0, statistics = 0;
-unsigned int		 stat_open, stat_writes, stat_reads, stat_errors;
+int			 oneshot = 0;
 
 int
 main(int argc, char *argv[])
@@ -102,36 +100,10 @@ main(int argc, char *argv[])
 	if ((eb = event_init()) == NULL)
 		err(1, "event_init");
 	socket_init();
-	signal_set(&evstat, SIGINFO, statistic_callback, &evstat);
-	if (statistics)
-		statistic_callback(SIGINFO, EV_TIMEOUT, &evstat);
-	else
-		signal_add(&evstat, NULL);
+	statistic_init();
 
 	event_dispatch();
 	return (0);
-}
-
-void
-statistic_callback(int sig, short event, void *arg)
-{
-	struct event	*evs = arg;
-	static int	 line;
-
-	if (line-- == 0 || (event & EV_SIGNAL)) {
-		printf(" %7s %7s %7s %7s\n", "open", "write", "read", "error");
-		line = 19;
-	}
-	printf(" %7d %7d %7d %7d\n",
-	    stat_open, stat_writes, stat_reads, stat_errors);
-	if (event & EV_TIMEOUT) {
-		struct timeval	 to;
-
-		to.tv_sec = 1;
-		to.tv_usec = 0;
-		signal_add(evs, &to);
-		stat_writes = stat_reads = stat_errors = 0;
-	}
 }
 
 void
@@ -180,9 +152,7 @@ socket_callback(int s, short event, void *arg)
 		for (ea = eladdr; ea->ea_laddr; ea++)
 			event_del(&ea->ea_event);
 		free(eladdr);
-                if (statistics)
-                        statistic_callback(SIGINFO, 0, &evstat);
-                event_del(&evstat);
+		statistic_destroy();
         }
 }
 

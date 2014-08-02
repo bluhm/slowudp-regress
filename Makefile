@@ -1,4 +1,4 @@
-SRCS =		client.c server.c
+SRCS =		client.c server.c util.c
 CLEANFILES +=	*.o ktrace.out sudpclient sudpserver
 CDIAGFLAGS +=	-Wall -Werror \
 		-Wbad-function-cast \
@@ -18,9 +18,9 @@ WARNINGS =	yes
 
 all: sudpclient sudpserver
 
-sudpclient: client.o
-	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} client.o ${LDADD}
-sudpserver: server.o
-	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} server.o ${LDADD}
+sudpclient: client.o util.o
+	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} client.o util.c ${LDADD}
+sudpserver: server.o util.o
+	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} server.o util.c ${LDADD}
 
 .include <bsd.prog.mk>

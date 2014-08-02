@@ -23,11 +23,12 @@
 #include <errno.h>
 #include <event.h>
 #include <netdb.h>
-#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
+#include "util.h"
 
 struct event_time {
 	struct event	et_event;
@@ -36,22 +37,19 @@ struct event_time {
 
 void	 usage(void);
 void	 findaddr(void);
-void	 statistic_callback(int, short, void *);
 void	 socket_init(void);
 void	 socket_write(int, struct event_time *);
 void	 socket_callback(int, short, void *);
 
 struct event_base	*eb;
-struct event		 evstat;
 const char		*host, *port;
 unsigned int		 retry_bound = 10, wait_bound = 30;
 unsigned int		 socket_number = 1000;
-int			 oneshot = 0, statistics = 0;
+int			 oneshot = 0;
 const struct sockaddr	*addr;
 socklen_t		 addrlen;
 int			 family, socktype, protocol;
 char			 address[NI_MAXHOST], service[NI_MAXSERV];
-unsigned int		 stat_open, stat_writes, stat_reads, stat_errors;
 
 int
 main(int argc, char *argv[])
@@ -113,36 +111,10 @@ main(int argc, char *argv[])
 	printf("connect address %s, service %s\n", address, service);
 	for (n = 0; n < socket_number; n++)
 		socket_init();
-	signal_set(&evstat, SIGINFO, statistic_callback, &evstat);
-	if (statistics)
-		statistic_callback(SIGINFO, EV_TIMEOUT, &evstat);
-	else
-		signal_add(&evstat, NULL);
+	statistic_init();
 
 	event_dispatch();
 	return (0);
-}
-
-void
-statistic_callback(int sig, short event, void *arg)
-{
-	struct event	*evs = arg;
-	static int	 line;
-
-	if (line-- == 0 || (event & EV_SIGNAL)) {
-		printf(" %7s %7s %7s %7s\n", "open", "write", "read", "error");
-		line = 19;
-	}
-	printf(" %7d %7d %7d %7d\n",
-	    stat_open, stat_writes, stat_reads, stat_errors);
-	if (event & EV_TIMEOUT) {
-		struct timeval	 to;
-
-		to.tv_sec = 1;
-		to.tv_usec = 0;
-		signal_add(evs, &to);
-		stat_writes = stat_reads = stat_errors = 0;
-	}
 }
 
 void
@@ -213,11 +185,8 @@ socket_callback(int s, short event, void *arg)
 	stat_open--;
 	if (!oneshot)
 		socket_init();
-	if (stat_open == 0) {
-		if (statistics)
-			statistic_callback(SIGINFO, 0, &evstat);
-		event_del(&evstat);
-	}
+	if (stat_open == 0)
+		statistic_destroy();
 }
 
 void
