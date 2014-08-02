@@ -36,8 +36,8 @@ struct event_time {
 };
 
 void	 usage(void);
-void	 findaddr(void);
-void	 socket_init(void);
+void	 socket_bind(void);
+void	 socket_start(void);
 void	 socket_write(int, struct event_time *);
 void	 socket_callback(int, short, void *);
 
@@ -106,7 +106,6 @@ main(int argc, char *argv[])
 		usage();
 	host = argv[0];
 	port = argv[1];
-	findaddr();
 
 	if (getrlimit(RLIMIT_NOFILE, &rlim) == -1)
 		err(1, "getrlimit number of open files");
@@ -121,12 +120,17 @@ main(int argc, char *argv[])
 		err(1, "event_init");
 
 	/*
+	 * Find connection address, create and bind socket.
+	 */
+	socket_bind();
+
+	/*
 	 * Create and connect all sockets and hook them into the event
 	 * loop.  The kernel automatically binds the local address.
 	 */
 	printf("connect address %s, service %s\n", address, service);
 	for (n = 0; n < socket_number; n++)
-		socket_init();
+		socket_start();
 
 	/*
 	 * Print statistic information periodically or at siginfo.
@@ -138,7 +142,7 @@ main(int argc, char *argv[])
 }
 
 void
-socket_init(void)
+socket_start(void)
 {
 	struct event_time	*et;
 	int			 s;
@@ -221,13 +225,13 @@ socket_callback(int s, short event, void *arg)
 	free(et);
 	stat_open--;
 	if (!oneshot)
-		socket_init();
+		socket_start();
 	if (stat_open == 0)
 		statistic_destroy();
 }
 
 void
-findaddr(void)
+socket_bind(void)
 {
 	struct addrinfo	 hints, *res, *res0;
 	int		 error;
@@ -236,8 +240,8 @@ findaddr(void)
 	const char	*cause = NULL;
 
 	/*
-	 * Find a suitable connect address and remember it.  The socket
-	 * is only used temorarily.
+	 * Find a suitable connect address and remember it.  Use the
+	 * bind socket for non-connected send.
 	 */
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = family;
@@ -282,8 +286,15 @@ findaddr(void)
 	if (error)
 		errx(1, "getnameinfo: %s", gai_strerror(error));
 
-	if (close(s) == -1)
-		err(1, "close");
+	if (connected) {
+		if (close(s) == -1)
+			err(1, "close");
+	} else {
+		if ((etime = malloc(sizeof(*etime))) == NULL)
+			err(1, "malloc");
+		event_set(&etime->et_event, s, EV_READ, socket_callback, etime);
+		event_add(&etime->et_event, NULL);
+	}
 }
 
 void
