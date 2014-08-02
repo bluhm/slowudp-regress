@@ -47,7 +47,7 @@ int			 family = PF_UNSPEC;
 const char		*host, *port;
 unsigned int		 delay_bound = 10;
 unsigned int		 socket_number = 1000;
-int			 oneshot = 0;
+int			 connected, oneshot;
 
 int
 main(int argc, char *argv[])
@@ -56,7 +56,7 @@ main(int argc, char *argv[])
 	const char	*errstr;
 	int		 ch;
 
-	while ((ch = getopt(argc, argv, "46b:n:or:s")) != -1) {
+	while ((ch = getopt(argc, argv, "46bc:n:or:s")) != -1) {
 		switch (ch) {
 		case '4':
 			family = PF_INET;
@@ -66,6 +66,9 @@ main(int argc, char *argv[])
 			break;
 		case 'b':
 			host = optarg;
+			break;
+		case 'c':
+			connected = 1;
 			break;
 		case 'n':
 			socket_number = strtonum(optarg, 1, 10000, &errstr);
@@ -270,10 +273,11 @@ void
 usage(void)
 {
 	(void)fprintf(stderr,
-	    "usage: %s [-46os] [-b bind] [-d delay] [-n num] port\n"
+	    "usage: %s [-46cos] [-b bind] [-d delay] [-n num] port\n"
 	    "    -4  IPv4 only\n"
 	    "    -6  IPv6 only\n"
-	    "    -b  bind address\n"
+	    "    -b  bind socket to address\n"
+	    "    -c  use connected sockets to send packets\n"
 	    "    -d  maximum delay for the response in seconds (%u)\n"
 	    "    -n  maximum number of simultanously bound sockets (%u)\n"
 	    "    -o  oneshot, do not reopen socket\n"
