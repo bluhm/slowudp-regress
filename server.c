@@ -129,7 +129,7 @@ main(int argc, char *argv[])
 void
 socket_read(int s, struct event_addr *ea)
 {
-	struct event_addr	*efaddr;
+	struct event_addr	*ef;
 	struct timeval		 to;
 	char			 rbuf[16];
 
@@ -139,24 +139,23 @@ socket_read(int s, struct event_addr *ea)
 	 * where we received the packet.  The foreign address is
 	 * taken from the query packet.  The response gets delayed.
 	 */
-	if ((efaddr = malloc(sizeof(*efaddr))) == NULL)
+	if ((ef = malloc(sizeof(*ef))) == NULL)
 		err(1, "malloc");
-	efaddr->ea_laddr = ea->ea_laddr;
-	efaddr->ea_laddrlen = ea->ea_laddrlen;
-	event_set(&efaddr->ea_event, s, EV_TIMEOUT, socket_callback,
-	    efaddr);
+	ef->ea_laddr = ea->ea_laddr;
+	ef->ea_laddrlen = ea->ea_laddrlen;
+	event_set(&ef->ea_event, s, EV_TIMEOUT, socket_callback, ef);
 
 	if (recvfrom(s, rbuf, sizeof(rbuf), 0, (struct sockaddr *)
-	    &efaddr->ea_faddr, &efaddr->ea_faddrlen) == -1) {
+	    &ef->ea_faddr, &ef->ea_faddrlen) == -1) {
 		stat_rcverr++;
-		free(efaddr);
+		free(ef);
 		return;
 	}
 
 	stat_recv++;
 	to.tv_sec = arc4random_uniform(delay_bound);
 	to.tv_usec = 1 + arc4random_uniform(999999);
-	event_add(&efaddr->ea_event, &to);
+	event_add(&ef->ea_event, &to);
 	stat_open++;
 }
 
