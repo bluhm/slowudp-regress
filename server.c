@@ -175,8 +175,14 @@ socket_read(int s, struct event_addr *ea)
 			int	 optval;
 
 			if ((s = socket(ea->ea_family, ea->ea_socktype,
-			    ea->ea_protocol)) == -1)
+			    ea->ea_protocol)) == -1) {
+				if (errno == EMFILE) {
+					stat_error++;
+					free(ef);
+					return;
+				}
 				err(1, "socket");
+			}
 			optval = 1;
 			if (setsockopt(s, SOL_SOCKET, SO_REUSEPORT,
 			    &optval, sizeof(optval)) == -1)
