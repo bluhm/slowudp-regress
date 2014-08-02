@@ -237,7 +237,7 @@ socket_init(void)
 		if (bind(s[nsock], res->ai_addr, res->ai_addrlen) == -1) {
 			cause = "bind";
 			save_errno = errno;
-			if (close(s[nsock]) == 1)
+			if (close(s[nsock]) == -1)
 				err(1, "close");
 			errno = save_errno;
 			continue;
