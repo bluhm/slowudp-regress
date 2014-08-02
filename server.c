@@ -253,7 +253,7 @@ socket_init(void)
 	/* don't call freeaddrinfo(res0), addr is still referenced */
 
 	/*
-	 * Create an event structures for every socket that is bound
+	 * Create an event structure for every socket that has been bound
 	 * to an address.  Wait to receive packets on these sockets.
 	 */
 	if ((ea = eladdr = calloc(nsock + 1, sizeof(*ea))) == NULL)
@@ -280,7 +280,7 @@ usage(void)
 	    "    -b  bind socket to address\n"
 	    "    -c  use connected sockets to send packets\n"
 	    "    -d  maximum delay for the response in seconds (%u)\n"
-	    "    -n  maximum number of simultanously bound sockets (%u)\n"
+	    "    -n  maximum number of simultanously bind sockets (%u)\n"
 	    "    -o  oneshot, do not reopen socket\n"
 	    "    -s  print statistics every second\n",
 	    getprogname(), socket_number, delay_bound);
