@@ -1,2 +1,9 @@
-Detect timing bugs in OpenBSD pf and socket layer by sending UDP
-packets an random intervals.
+Detect a race in OpenBSD pf and socket layer by sending UDP packets
+at random intervals.
+
+The client is sending UDP packets at a random interval.  It waits
+for replys for a random period.  It can handle multiple sending
+sockets simultanously.
+
+The server receives UDP packets and waits a random interval before
+it sends the reply.
