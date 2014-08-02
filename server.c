@@ -43,6 +43,7 @@ void	 socket_callback(int, short, void *);
 
 struct event_base	*eb;
 struct event_addr	*eladdr;
+int			 family = PF_UNSPEC;
 const char		*host, *port;
 unsigned int		 reply_bound = 10;
 unsigned int		 socket_number = 1000;
@@ -55,8 +56,14 @@ main(int argc, char *argv[])
 	const char	*errstr;
 	int		 ch;
 
-	while ((ch = getopt(argc, argv, "b:n:or:s")) != -1) {
+	while ((ch = getopt(argc, argv, "46b:n:or:s")) != -1) {
 		switch (ch) {
+		case '4':
+			family = PF_INET;
+			break;
+		case '6':
+			family = PF_INET6;
+			break;
 		case 'b':
 			host = optarg;
 			break;
@@ -178,13 +185,14 @@ socket_init(void)
 		err(1, "calloc");
 
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = PF_UNSPEC;
+	hints.ai_family = family;
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_protocol = IPPROTO_UDP;
 	hints.ai_flags = AI_PASSIVE;
 	error = getaddrinfo(host, port, &hints, &res0);
 	if (error)
-		errx(1, "getaddrinfo: %s", gai_strerror(error));
+		errx(1, "getaddrinfo host %s, port %s: %s",
+		    host, port, gai_strerror(error));
 	nsock = 0;
 	*address = *service = '\0';
 	for (res = res0; res && nsock < socket_number; res = res->ai_next) {
@@ -192,7 +200,7 @@ socket_init(void)
 		    sizeof(address), service, sizeof(service),
 		    NI_NUMERICHOST | NI_NUMERICSERV);
 		if (error)
-			errx(1, "getaddrinfo: %s", gai_strerror(error));
+			errx(1, "getnameinfo: %s", gai_strerror(error));
 
 		s[nsock] = socket(res->ai_family, res->ai_socktype,
 		    res->ai_protocol);
@@ -236,7 +244,9 @@ void
 usage(void)
 {
 	(void)fprintf(stderr,
-	    "usage: %s [-os] [-b bind] [-n num] [-r reply] port\n"
+	    "usage: %s [-46os] [-b bind] [-n num] [-r reply] port\n"
+	    "    -4  IPv4 only\n"
+	    "    -6  IPv6 only\n"
 	    "    -b  bind address\n"
 	    "    -n  maximum number of simultanously bound sockets (%u)\n"
 	    "    -o  oneshot, do not reopen socket\n"

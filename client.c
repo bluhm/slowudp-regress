@@ -43,12 +43,13 @@ void	 socket_callback(int, short, void *);
 
 struct event_base	*eb;
 const char		*host, *port;
+int			 family = PF_UNSPEC;
 unsigned int		 retry_bound = 10, wait_bound = 30;
 unsigned int		 socket_number = 1000;
 int			 oneshot = 0;
 const struct sockaddr	*addr;
 socklen_t		 addrlen;
-int			 family, socktype, protocol;
+int			 socktype, protocol;
 char			 address[NI_MAXHOST], service[NI_MAXSERV];
 
 int
@@ -59,8 +60,14 @@ main(int argc, char *argv[])
 	unsigned int	 n;
 	int		 ch;
 
-	while ((ch = getopt(argc, argv, "n:or:sw:")) != -1) {
+	while ((ch = getopt(argc, argv, "46n:or:sw:")) != -1) {
 		switch (ch) {
+		case '4':
+			family = PF_INET;
+			break;
+		case '6':
+			family = PF_INET6;
+			break;
 		case 'n':
 			socket_number = strtonum(optarg, 1, 10000, &errstr);
 			if (errstr)
@@ -199,12 +206,13 @@ findaddr(void)
 	const char	*cause = NULL;
 
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = PF_UNSPEC;
+	hints.ai_family = family;
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_protocol = IPPROTO_UDP;
 	error = getaddrinfo(host, port, &hints, &res0);
 	if (error)
-		errx(1, "getaddrinfo: %s", gai_strerror(error));
+		errx(1, "getaddrinfo host %s, port %s: %s",
+		    host, port, gai_strerror(error));
 	s = -1;
 	for (res = res0; res; res = res->ai_next) {
 		s = socket(res->ai_family, res->ai_socktype,
@@ -238,14 +246,16 @@ findaddr(void)
 	error = getnameinfo(addr, addrlen, address, sizeof(address), service,
 	    sizeof(service), NI_NUMERICHOST | NI_NUMERICSERV);
 	if (error)
-		errx(1, "getaddrinfo: %s", gai_strerror(error));
+		errx(1, "getnameinfo: %s", gai_strerror(error));
 }
 
 void
 usage(void)
 {
 	(void)fprintf(stderr,
-	    "usage: %s [-os] [-n num] [-r retry] [-w wait] host port\n"
+	    "usage: %s [-46os] [-n num] [-r retry] [-w wait] host port\n"
+	    "    -4  IPv4 only\n"
+	    "    -6  IPv6 only\n"
 	    "    -n  number of simultanously connected sockets (%u)\n"
 	    "    -o  oneshot, do not reopen socket\n"
 	    "    -r  maximum retry query timeout in seconds (%u)\n"
