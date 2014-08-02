@@ -162,8 +162,13 @@ socket_write(int s, struct event_time *et)
 {
 	struct timeval	 to;
 	const char	 wbuf[] = "foo\n";
+	ssize_t		 n;
 
-	if (send(s, wbuf, sizeof(wbuf) - 1, 0) == -1)
+	if (connected)
+		n = send(s, wbuf, sizeof(wbuf) - 1, 0);
+	else
+		n = sendto(s, wbuf, sizeof(wbuf) - 1, 0, addr, addrlen);
+	if (n == -1)
 		stat_snderr++;
 	else
 		stat_send++;
