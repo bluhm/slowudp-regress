@@ -146,6 +146,7 @@ socket_read(int s, struct event_addr *ea)
 	ef->ea_laddrlen = ea->ea_laddrlen;
 	event_set(&ef->ea_event, s, EV_TIMEOUT, socket_callback, ef);
 
+	ef->ea_faddrlen = sizeof(ef->ea_faddr);
 	if (recvfrom(s, rbuf, sizeof(rbuf), 0, (struct sockaddr *)
 	    &ef->ea_faddr, &ef->ea_faddrlen) == -1) {
 		stat_rcverr++;
