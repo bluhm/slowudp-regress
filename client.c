@@ -36,7 +36,7 @@ struct event_time {
 };
 
 void	 usage(void);
-void	 socket_bind(void);
+void	 socket_init(void);
 void	 socket_start(void);
 void	 socket_write(int, struct event_time *);
 void	 socket_callback(int, short, void *);
@@ -58,7 +58,6 @@ main(int argc, char *argv[])
 {
 	struct rlimit	 rlim;
 	const char	*errstr;
-	unsigned int	 n;
 	int		 ch;
 
 	while ((ch = getopt(argc, argv, "46cn:or:sw:")) != -1) {
@@ -121,16 +120,9 @@ main(int argc, char *argv[])
 
 	/*
 	 * Find connection address, create and bind socket.
+	 * Send on connection sockets and start timeout.
 	 */
-	socket_bind();
-
-	/*
-	 * Create and connect all sockets and hook them into the event
-	 * loop.  The kernel automatically binds the local address.
-	 */
-	printf("connect address %s, service %s\n", address, service);
-	for (n = 0; n < socket_number; n++)
-		socket_start();
+	socket_init();
 
 	/*
 	 * Print statistic information periodically or at siginfo.
@@ -231,12 +223,13 @@ socket_callback(int s, short event, void *arg)
 }
 
 void
-socket_bind(void)
+socket_init(void)
 {
 	struct addrinfo	 hints, *res, *res0;
 	int		 error;
 	int		 save_errno;
 	int		 s;
+	unsigned int	 n;
 	const char	*cause = NULL;
 
 	/*
@@ -295,6 +288,14 @@ socket_bind(void)
 		event_set(&etime->et_event, s, EV_READ, socket_callback, etime);
 		event_add(&etime->et_event, NULL);
 	}
+
+	/*
+	 * Create and connect all sockets and hook them into the event
+	 * loop.  The kernel automatically binds the local address.
+	 */
+	printf("connect address %s, service %s\n", address, service);
+	for (n = 0; n < socket_number; n++)
+		socket_start();
 }
 
 void
