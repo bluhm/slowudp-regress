@@ -146,7 +146,7 @@ socket_callback(int s, short event, void *arg)
 
 		if (recvfrom(s, rbuf, sizeof(rbuf), 0, (struct sockaddr *)
 		    &efaddr->ea_faddr, &efaddr->ea_faddrlen) == -1) {
-			stat_errors++;
+			stat_rcverr++;
 			free(efaddr);
 		} else {
 			struct timeval		 to;
@@ -167,7 +167,7 @@ socket_callback(int s, short event, void *arg)
 		 */
 		if (sendto(s, wbuf, sizeof(wbuf) - 1, 0, (struct sockaddr *)
 		    &ea->ea_faddr, ea->ea_faddrlen) == -1)
-			stat_errors++;
+			stat_snderr++;
 		else
 			stat_send++;
 		free(ea);

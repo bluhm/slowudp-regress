@@ -164,7 +164,7 @@ socket_write(int s, struct event_time *et)
 	const char	 wbuf[] = "foo\n";
 
 	if (send(s, wbuf, sizeof(wbuf) - 1, 0) == -1)
-		stat_errors++;
+		stat_snderr++;
 	else
 		stat_send++;
 
@@ -193,7 +193,7 @@ socket_callback(int s, short event, void *arg)
 		char	 rbuf[16];
 
 		if (recv(s, rbuf, sizeof(rbuf), 0) == -1)
-			stat_errors++;
+			stat_rcverr++;
 		else
 			stat_recv++;
 	}

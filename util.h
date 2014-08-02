@@ -21,6 +21,7 @@ void	 statistic_init(void);
 void	 statistic_destroy(void);
 
 extern int		 statistics;
-extern unsigned int	 stat_open, stat_recv, stat_send, stat_errors;
+extern unsigned int	 stat_open, stat_send, stat_snderr,
+			 stat_recv, stat_rcverr, stat_error;
 
 #endif /* SLOWUDP_UTIL_H */
