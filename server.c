@@ -106,7 +106,16 @@ main(int argc, char *argv[])
 
 	if ((eb = event_init()) == NULL)
 		err(1, "event_init");
+
+	/*
+	 * Create and bind sockets and hook them into the event loop
+	 * for all server adresses.
+	 */
 	socket_init();
+
+	/*
+	 * Print statistic information periodically or at siginfo.
+	 */
 	statistic_init();
 
 	event_dispatch();
@@ -122,6 +131,12 @@ socket_callback(int s, short event, void *arg)
 		struct event_addr	*efaddr;
 		char			 rbuf[16];
 
+		/*
+		 * Create an event that is used to send the reply.  The local
+		 * address is the same as used to bind the socket where we
+		 * received the packet.  The foreign address is taken from
+		 * the query packet.  The reply gets delayed.
+		 */
 		if ((efaddr = malloc(sizeof(*efaddr))) == NULL)
 			err(1, "malloc");
 		efaddr->ea_laddr = ea->ea_laddr;
@@ -146,6 +161,10 @@ socket_callback(int s, short event, void *arg)
 	if (event & EV_TIMEOUT) {
 		const char	 wbuf[] = "bar\n";
 
+		/*
+		 * The delay for the reply is over.  Send it and
+		 * destroy the event structure for that.
+		 */
 		if (sendto(s, wbuf, sizeof(wbuf) - 1, 0, (struct sockaddr *)
 		    &ea->ea_faddr, ea->ea_faddrlen) == -1)
 			stat_errors++;
@@ -177,6 +196,9 @@ socket_init(void)
 	socklen_t		*addrlen;
 	char			 address[NI_MAXHOST], service[NI_MAXSERV];
 
+	/*
+	 * Create sockets and bind them for all suitable addresses.
+	 */
 	if ((s = calloc(socket_number, sizeof(*s))) == NULL)
 		err(1, "calloc");
 	if ((addr = calloc(socket_number, sizeof(*addr))) == NULL)
@@ -226,6 +248,10 @@ socket_init(void)
 		err(1, "%s: address %s, service %s", cause, address, service);
 	/* don't call freeaddrinfo(res0), addr is still referenced */
 
+	/*
+	 * Create an event structures for every socket that is bound
+	 * to an address.  Wait to receive packets on these sockets.
+	 */
 	if ((ea = eladdr = calloc(nsock + 1, sizeof(*ea))) == NULL)
 		err(1, "calloc");
 	for (n = 0; n < nsock; n++, ea++) {

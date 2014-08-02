@@ -115,9 +115,18 @@ main(int argc, char *argv[])
 
 	if ((eb = event_init()) == NULL)
 		err(1, "event_init");
+
+	/*
+	 * Create and connect all sockets and hook them into the event
+	 * loop.  The kernel automatically binds the local address.
+	 */
 	printf("connect address %s, service %s\n", address, service);
 	for (n = 0; n < socket_number; n++)
 		socket_init();
+
+	/*
+	 * Print statistic information periodically or at siginfo.
+	 */
 	statistic_init();
 
 	event_dispatch();
@@ -130,6 +139,10 @@ socket_init(void)
 	struct event_time	*et;
 	int			 s;
 
+	/*
+	 * Create and bind a socket, send a packet and wait for the
+	 * reply.  Also add a retransmit and wait timeout.
+	 */
 	if ((s = socket(family, socktype, protocol)) == -1)
 		err(1, "socket: family %d, socktype %d, protocol %d",
 		    family, socktype, protocol);
@@ -155,6 +168,11 @@ socket_write(int s, struct event_time *et)
 	else
 		stat_writes++;
 
+	/*
+	 * Chose a random resend timeout.  If it is greater than the wait
+	 * timeout stop retransmitting.  The wait fields indicates how long
+	 * we will have to wait after the next timeout.
+	 */
 	to.tv_sec = arc4random_uniform(retry_bound);
 	to.tv_usec = 1 + arc4random_uniform(999999);
 	if (timercmp(&to, &et->et_wait, <)) {
@@ -180,11 +198,19 @@ socket_callback(int s, short event, void *arg)
 			stat_reads++;
 	}
 	if (event & EV_TIMEOUT) {
+		/*
+		 * If we have not reached the final wait time,
+		 * send another packet and wait for the reply.
+		 */
 		if (timerisset(&et->et_wait)) {
 			socket_write(s, et);
 			return;
 		}
 	}
+	/*
+	 * We close the connection after we got a reply or reached the
+	 * wait interval.
+	 */
 	if (close(s) == -1)
 		err(1, "close");
 	event_del(&et->et_event);
@@ -205,6 +231,10 @@ findaddr(void)
 	int		 s;
 	const char	*cause = NULL;
 
+	/*
+	 * Find a suitable connect address and remember it.  The socket
+	 * is only used temorarily.
+	 */
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = family;
 	hints.ai_socktype = SOCK_DGRAM;
