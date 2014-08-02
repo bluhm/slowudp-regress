@@ -58,7 +58,7 @@ main(int argc, char *argv[])
 	const char	*errstr;
 	int		 ch;
 
-	while ((ch = getopt(argc, argv, "46bc:n:or:s")) != -1) {
+	while ((ch = getopt(argc, argv, "46b:cn:or:s")) != -1) {
 		switch (ch) {
 		case '4':
 			family = PF_INET;
