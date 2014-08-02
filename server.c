@@ -268,7 +268,7 @@ socket_init(void)
 		err(1, "calloc");
 	for (n = 0; n < nsock; n++, ea++) {
 		event_set(&ea->ea_event, s[n], EV_READ|EV_PERSIST,
-		    socket_callback, &ea);
+		    socket_callback, ea);
 		ea->ea_laddr = addr[n];
 		ea->ea_laddrlen = addrlen[n];
 		event_add(&ea->ea_event, NULL);
