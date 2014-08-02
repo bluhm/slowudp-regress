@@ -238,6 +238,7 @@ socket_init(void)
 	const char		*cause = NULL;
 	const struct sockaddr	**addr;
 	socklen_t		*addrlen;
+	int			*afamily, *socktype, *protocol;
 	char			 address[NI_MAXHOST], service[NI_MAXSERV];
 
 	/*
@@ -248,6 +249,12 @@ socket_init(void)
 	if ((addr = calloc(socket_number, sizeof(*addr))) == NULL)
 		err(1, "calloc");
 	if ((addrlen = calloc(socket_number, sizeof(*addrlen))) == NULL)
+		err(1, "calloc");
+	if ((afamily = calloc(socket_number, sizeof(*afamily))) == NULL)
+		err(1, "calloc");
+	if ((socktype = calloc(socket_number, sizeof(*socktype))) == NULL)
+		err(1, "calloc");
+	if ((protocol = calloc(socket_number, sizeof(*protocol))) == NULL)
 		err(1, "calloc");
 
 	memset(&hints, 0, sizeof(hints));
@@ -287,6 +294,9 @@ socket_init(void)
 		printf("bind address %s, service %s\n", address, service);
 		addr[nsock] = res->ai_addr;
 		addrlen[nsock] = res->ai_addrlen;
+		afamily[nsock] = res->ai_family;
+		socktype[nsock] = res->ai_socktype;
+		protocol[nsock] = res->ai_protocol;
 		nsock++;
 	}
 	if (nsock == 0)
@@ -304,11 +314,17 @@ socket_init(void)
 		    socket_callback, ea);
 		ea->ea_laddr = addr[n];
 		ea->ea_laddrlen = addrlen[n];
+		ea->ea_family = afamily[n];
+		ea->ea_socktype = socktype[n];
+		ea->ea_protocol = protocol[n];
 		event_add(&ea->ea_event, NULL);
 	}
+	free(s);
 	free(addr);
 	free(addrlen);
-	free(s);
+	free(afamily);
+	free(socktype);
+	free(protocol);
 }
 
 void
