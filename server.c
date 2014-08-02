@@ -130,6 +130,7 @@ void
 socket_read(int s, struct event_addr *ea)
 {
 	struct event_addr	*efaddr;
+	struct timeval		 to;
 	char			 rbuf[16];
 
 	/*
@@ -149,15 +150,14 @@ socket_read(int s, struct event_addr *ea)
 	    &efaddr->ea_faddr, &efaddr->ea_faddrlen) == -1) {
 		stat_rcverr++;
 		free(efaddr);
-	} else {
-		struct timeval		 to;
-
-		stat_recv++;
-		to.tv_sec = arc4random_uniform(delay_bound);
-		to.tv_usec = 1 + arc4random_uniform(999999);
-		event_add(&efaddr->ea_event, &to);
-		stat_open++;
+		return;
 	}
+
+	stat_recv++;
+	to.tv_sec = arc4random_uniform(delay_bound);
+	to.tv_usec = 1 + arc4random_uniform(999999);
+	event_add(&efaddr->ea_event, &to);
+	stat_open++;
 }
 
 void
