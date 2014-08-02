@@ -19,8 +19,8 @@ WARNINGS =	yes
 all: sudpclient sudpserver
 
 sudpclient: client.o util.o
-	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} client.o util.c ${LDADD}
+	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} client.o util.o ${LDADD}
 sudpserver: server.o util.o
-	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} server.o util.c ${LDADD}
+	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} server.o util.o ${LDADD}
 
 .include <bsd.prog.mk>
