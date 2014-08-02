@@ -240,7 +240,7 @@ usage(void)
 	    "    -b  bind address\n"
 	    "    -n  maximum number of simultanously bound sockets (%u)\n"
 	    "    -o  oneshot, do not reopen socket\n"
-	    "    -r  maximum reply response timeout (%u)\n"
+	    "    -r  maximum reply timeout in seconds (%u)\n"
 	    "    -s  print statistics every second\n",
 	    getprogname(), socket_number, reply_bound);
 	exit(2);

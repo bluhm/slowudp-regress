@@ -248,9 +248,9 @@ usage(void)
 	    "usage: %s [-os] [-n num] [-r retry] [-w wait] host port\n"
 	    "    -n  number of simultanously connected sockets (%u)\n"
 	    "    -o  oneshot, do not reopen socket\n"
-	    "    -r  maximum retry query timeout (%u)\n"
+	    "    -r  maximum retry query timeout in seconds (%u)\n"
 	    "    -s  print statistics every second\n"
-	    "    -w  maximum wait for reply timeout (%u)\n",
+	    "    -w  maximum wait for reply timeout in seconds (%u)\n",
 	    getprogname(), socket_number, retry_bound, wait_bound);
 	exit(2);
 }
