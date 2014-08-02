@@ -44,7 +44,7 @@ void	 socket_callback(int, short, void *);
 struct event_base	*eb;
 struct event		 evstat;
 const char		*host, *port;
-unsigned int		 reply_bound = 10, wait_bound = 30;
+unsigned int		 reply_bound = 10;
 unsigned int		 socket_number = 1000;
 int			 oneshot = 0, statistics = 0;
 unsigned int		 stat_open, stat_writes, stat_reads, stat_errors;
@@ -56,7 +56,7 @@ main(int argc, char *argv[])
 	const char	*errstr;
 	int		 ch;
 
-	while ((ch = getopt(argc, argv, "b:n:or:sw:")) != -1) {
+	while ((ch = getopt(argc, argv, "b:n:or:s")) != -1) {
 		switch (ch) {
 		case 'b':
 			host = optarg;
@@ -78,12 +78,6 @@ main(int argc, char *argv[])
 			break;
 		case 's':
 			statistics = 1;
-			break;
-		case 'w':
-			wait_bound = strtonum(optarg, 1, 60, &errstr);
-			if (errstr)
-				errx(1, "wait boundary time is %s: %s",
-				    errstr, optarg);
 			break;
 		default:
 			usage();
@@ -267,8 +261,7 @@ usage(void)
 	    "    -n  number of simultanously connected sockets (%u)\n"
 	    "    -o  oneshot, do not reopen socket\n"
 	    "    -r  maximum reply timeout (%u)\n"
-	    "    -s  print statistics every second\n"
-	    "    -w  maximum wait timeout (%u)\n",
-	    getprogname(), socket_number, reply_bound, wait_bound);
+	    "    -s  print statistics every second\n",
+	    getprogname(), socket_number, reply_bound);
 	exit(2);
 }
