@@ -16,11 +16,19 @@ LDFLAGS =	-levent
 NOMAN =		yes
 WARNINGS =	yes
 
-all: sudpclient sudpserver
+REGRESS_TARGETS =	run-regress-client run-regress-server
+
+regress: sudpclient sudpserver
+	cd ${.CURDIR} && ${MAKE} -j 2 run-regress-client run-regress-server
+
+run-regress-client: sudpclient
+	./sudpclient -o localhost 4019
+run-regress-server: sudpserver
+	./sudpserver -o 4019
 
 sudpclient: client.o util.o
 	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} client.o util.o ${LDADD}
 sudpserver: server.o util.o
 	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} server.o util.o ${LDADD}
 
-.include <bsd.prog.mk>
+.include <bsd.regress.mk>
