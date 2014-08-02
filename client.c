@@ -44,7 +44,7 @@ void	 socket_callback(int, short, void *);
 struct event_base	*eb;
 const char		*host, *port;
 int			 family = PF_UNSPEC;
-unsigned int		 retry_bound = 10, wait_bound = 30;
+unsigned int		 resend_bound = 10, wait_bound = 30;
 unsigned int		 socket_number = 1000;
 int			 oneshot = 0;
 const struct sockaddr	*addr;
@@ -78,9 +78,9 @@ main(int argc, char *argv[])
 			oneshot = 1;
 			break;
 		case 'r':
-			retry_bound = strtonum(optarg, 1, 60, &errstr);
+			resend_bound = strtonum(optarg, 1, 60, &errstr);
 			if (errstr)
-				errx(1, "retry boundary time is %s: %s",
+				errx(1, "resend boundary time is %s: %s",
 				    errstr, optarg);
 			break;
 		case 's':
@@ -141,7 +141,7 @@ socket_init(void)
 
 	/*
 	 * Create and bind a socket, send a packet and wait for the
-	 * reply.  Also add a retransmit and wait timeout.
+	 * response.  Also add a retransmit and wait timeout.
 	 */
 	if ((s = socket(family, socktype, protocol)) == -1)
 		err(1, "socket: family %d, socktype %d, protocol %d",
@@ -173,7 +173,7 @@ socket_write(int s, struct event_time *et)
 	 * timeout stop retransmitting.  The wait fields indicates how long
 	 * we will have to wait after the next timeout.
 	 */
-	to.tv_sec = arc4random_uniform(retry_bound);
+	to.tv_sec = arc4random_uniform(resend_bound);
 	to.tv_usec = 1 + arc4random_uniform(999999);
 	if (timercmp(&to, &et->et_wait, <)) {
 		timersub(&et->et_wait, &to, &et->et_wait);
@@ -200,7 +200,7 @@ socket_callback(int s, short event, void *arg)
 	if (event & EV_TIMEOUT) {
 		/*
 		 * If we have not reached the final wait time,
-		 * send another packet and wait for the reply.
+		 * send another packet and wait for the response.
 		 */
 		if (timerisset(&et->et_wait)) {
 			socket_write(s, et);
@@ -208,7 +208,7 @@ socket_callback(int s, short event, void *arg)
 		}
 	}
 	/*
-	 * We close the connection after we got a reply or reached the
+	 * We close the connection after we got a response or reached the
 	 * wait interval.
 	 */
 	if (close(s) == -1)
@@ -283,14 +283,14 @@ void
 usage(void)
 {
 	(void)fprintf(stderr,
-	    "usage: %s [-46os] [-n num] [-r retry] [-w wait] host port\n"
+	    "usage: %s [-46os] [-n num] [-r resend] [-w wait] host port\n"
 	    "    -4  IPv4 only\n"
 	    "    -6  IPv6 only\n"
 	    "    -n  number of simultanously connected sockets (%u)\n"
 	    "    -o  oneshot, do not reopen socket\n"
-	    "    -r  maximum retry query timeout in seconds (%u)\n"
+	    "    -r  maximum resend timeout for the query in seconds (%u)\n"
 	    "    -s  print statistics every second\n"
-	    "    -w  maximum wait for reply timeout in seconds (%u)\n",
-	    getprogname(), socket_number, retry_bound, wait_bound);
+	    "    -w  maximum wait timeout for the response in seconds (%u)\n",
+	    getprogname(), socket_number, resend_bound, wait_bound);
 	exit(2);
 }

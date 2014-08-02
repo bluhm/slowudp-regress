@@ -45,7 +45,7 @@ struct event_base	*eb;
 struct event_addr	*eladdr;
 int			 family = PF_UNSPEC;
 const char		*host, *port;
-unsigned int		 reply_bound = 10;
+unsigned int		 delay_bound = 10;
 unsigned int		 socket_number = 1000;
 int			 oneshot = 0;
 
@@ -77,9 +77,9 @@ main(int argc, char *argv[])
 			oneshot = 1;
 			break;
 		case 'r':
-			reply_bound = strtonum(optarg, 1, 60, &errstr);
+			delay_bound = strtonum(optarg, 1, 60, &errstr);
 			if (errstr)
-				errx(1, "reply boundary time is %s: %s",
+				errx(1, "delay boundary time is %s: %s",
 				    errstr, optarg);
 			break;
 		case 's':
@@ -132,10 +132,10 @@ socket_callback(int s, short event, void *arg)
 		char			 rbuf[16];
 
 		/*
-		 * Create an event that is used to send the reply.  The local
-		 * address is the same as used to bind the socket where we
-		 * received the packet.  The foreign address is taken from
-		 * the query packet.  The reply gets delayed.
+		 * Create an event that is used to send the resonse.  The
+		 * local address is the same as we used to bind the socket
+		 * where we received the packet.  The foreign address is
+		 * taken from the query packet.  The response gets delayed.
 		 */
 		if ((efaddr = malloc(sizeof(*efaddr))) == NULL)
 			err(1, "malloc");
@@ -152,7 +152,7 @@ socket_callback(int s, short event, void *arg)
 			struct timeval		 to;
 
 			stat_reads++;
-			to.tv_sec = arc4random_uniform(reply_bound);
+			to.tv_sec = arc4random_uniform(delay_bound);
 			to.tv_usec = 1 + arc4random_uniform(999999);
 			event_add(&efaddr->ea_event, &to);
 			stat_open++;
@@ -162,8 +162,8 @@ socket_callback(int s, short event, void *arg)
 		const char	 wbuf[] = "bar\n";
 
 		/*
-		 * The delay for the reply is over.  Send it and
-		 * destroy the event structure for that.
+		 * The delay for the response is over.  Send it and
+		 * destroy the event structure.
 		 */
 		if (sendto(s, wbuf, sizeof(wbuf) - 1, 0, (struct sockaddr *)
 		    &ea->ea_faddr, ea->ea_faddrlen) == -1)
@@ -270,14 +270,14 @@ void
 usage(void)
 {
 	(void)fprintf(stderr,
-	    "usage: %s [-46os] [-b bind] [-n num] [-r reply] port\n"
+	    "usage: %s [-46os] [-b bind] [-d delay] [-n num] port\n"
 	    "    -4  IPv4 only\n"
 	    "    -6  IPv6 only\n"
 	    "    -b  bind address\n"
+	    "    -d  maximum delay for the response in seconds (%u)\n"
 	    "    -n  maximum number of simultanously bound sockets (%u)\n"
 	    "    -o  oneshot, do not reopen socket\n"
-	    "    -r  maximum reply timeout in seconds (%u)\n"
 	    "    -s  print statistics every second\n",
-	    getprogname(), socket_number, reply_bound);
+	    getprogname(), socket_number, delay_bound);
 	exit(2);
 }
