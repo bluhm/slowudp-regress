@@ -247,8 +247,8 @@ socket_init(void)
 	const char	*cause = NULL;
 
 	/*
-	 * Find a suitable connect address and remember it.  Use the
-	 * bind socket for non-connected send.
+	 * Find a suitable connect address and remember it.  Create
+	 * a socket for non-connected send.
 	 */
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = family;
@@ -287,6 +287,8 @@ socket_init(void)
 	}
 	if (s == -1)
 		err(1, "%s address %s, service %s", cause, address, service);
+	if (close(s) == -1)
+		err(1, "close");
 	printf("connect address %s, service %s\n", address, service);
 	addr = res->ai_addr;
 	addrlen = res->ai_addrlen;
@@ -295,10 +297,10 @@ socket_init(void)
 	protocol= res->ai_protocol;
 	/* don't call freeaddrinfo(res0), addr is still referenced */
 
-	if (connected) {
-		if (close(s) == -1)
-			err(1, "close");
-	} else {
+	if (!connected) {
+		if ((s = socket(family, socktype, protocol)) == -1)
+			err(1, "socket: family %d, socktype %d, protocol %d",
+			    family, socktype, protocol);
 		if ((etime = malloc(sizeof(*etime))) == NULL)
 			err(1, "malloc");
 		event_set(&etime->et_event, s, EV_READ|EV_PERSIST,
