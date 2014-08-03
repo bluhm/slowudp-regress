@@ -48,8 +48,8 @@ int			 family = PF_UNSPEC;
 unsigned int		 resend_bound = 10, wait_bound = 30;
 unsigned int		 socket_number = 1000;
 int			 connected, oneshot;
-const struct sockaddr	*addr;
-socklen_t		 addrlen;
+const struct sockaddr	*faddr;
+socklen_t		 faddrlen;
 int			 socktype, protocol;
 char			 laddress[NI_MAXHOST], lservice[NI_MAXSERV],
 			 faddress[NI_MAXHOST], fservice[NI_MAXSERV];
@@ -147,7 +147,7 @@ socket_start(int s)
 		if ((s = socket(family, socktype, protocol)) == -1)
 			err(1, "socket: family %d, socktype %d, protocol %d",
 			    family, socktype, protocol);
-		if (connect(s, addr, addrlen) == -1)
+		if (connect(s, faddr, faddrlen) == -1)
 			err(1, "connect foreign address %s, service %s",
 			    faddress, fservice);
 	}
@@ -170,7 +170,7 @@ socket_write(int s, struct event_time *et)
 	if (connected)
 		n = send(s, wbuf, sizeof(wbuf) - 1, 0);
 	else
-		n = sendto(s, wbuf, sizeof(wbuf) - 1, 0, addr, addrlen);
+		n = sendto(s, wbuf, sizeof(wbuf) - 1, 0, faddr, faddrlen);
 	if (n == -1)
 		stat_snderr++;
 	else
@@ -311,8 +311,8 @@ socket_init(void)
 		err(1, "close");
 	printf("%s foreign address %s, service %s\n",
 	    getprogname(), faddress, fservice);
-	addr = res->ai_addr;
-	addrlen = res->ai_addrlen;
+	faddr = res->ai_addr;
+	faddrlen = res->ai_addrlen;
 	family = res->ai_family;
 	socktype = res->ai_socktype;
 	protocol= res->ai_protocol;

@@ -258,8 +258,8 @@ socket_init(void)
 	int			*s;
 	unsigned int		 nsock, n;
 	const char		*cause = NULL;
-	const struct sockaddr	**addr;
-	socklen_t		*addrlen;
+	const struct sockaddr	**laddr;
+	socklen_t		*laddrlen;
 	int			*sfamily, *socktype, *protocol;
 
 	/*
@@ -267,9 +267,9 @@ socket_init(void)
 	 */
 	if ((s = calloc(socket_number, sizeof(*s))) == NULL)
 		err(1, "calloc");
-	if ((addr = calloc(socket_number, sizeof(*addr))) == NULL)
+	if ((laddr = calloc(socket_number, sizeof(*laddr))) == NULL)
 		err(1, "calloc");
-	if ((addrlen = calloc(socket_number, sizeof(*addrlen))) == NULL)
+	if ((laddrlen = calloc(socket_number, sizeof(*laddrlen))) == NULL)
 		err(1, "calloc");
 	if ((sfamily = calloc(socket_number, sizeof(*sfamily))) == NULL)
 		err(1, "calloc");
@@ -320,8 +320,8 @@ socket_init(void)
 
 		printf("%s local address %s, service %s\n",
 		    getprogname(), laddress, lservice);
-		addr[nsock] = res->ai_addr;
-		addrlen[nsock] = res->ai_addrlen;
+		laddr[nsock] = res->ai_addr;
+		laddrlen[nsock] = res->ai_addrlen;
 		sfamily[nsock] = res->ai_family;
 		socktype[nsock] = res->ai_socktype;
 		protocol[nsock] = res->ai_protocol;
@@ -341,16 +341,16 @@ socket_init(void)
 	for (n = 0; n < nsock; n++, ea++) {
 		event_set(&ea->ea_event, s[n], EV_READ|EV_PERSIST,
 		    socket_callback, ea);
-		ea->ea_laddr = addr[n];
-		ea->ea_laddrlen = addrlen[n];
+		ea->ea_laddr = laddr[n];
+		ea->ea_laddrlen = laddrlen[n];
 		ea->ea_family = sfamily[n];
 		ea->ea_socktype = socktype[n];
 		ea->ea_protocol = protocol[n];
 		event_add(&ea->ea_event, NULL);
 	}
 	free(s);
-	free(addr);
-	free(addrlen);
+	free(laddr);
+	free(laddrlen);
 	free(sfamily);
 	free(socktype);
 	free(protocol);
