@@ -25,17 +25,17 @@ regress: sudpclient sudpserver
 	    run-regress-client-connect-bind run-regress-client-connect-connect
 
 run-regress-client-bind-bind: sudpclient
-	./sudpclient -os localhost 4020
+	./sudpclient -osv localhost 4020
 run-regress-client-bind-connect: sudpclient
-	./sudpclient -os localhost 4021
+	./sudpclient -osv localhost 4021
 run-regress-client-connect-bind: sudpclient
-	./sudpclient -cos localhost 4020
+	./sudpclient -cosv localhost 4020
 run-regress-client-connect-connect: sudpclient
-	./sudpclient -cos localhost 4021
+	./sudpclient -cosv localhost 4021
 run-regress-server-bind: sudpserver
-	./sudpserver -os 4020
+	./sudpserver -osv 4020
 run-regress-server-connect: sudpserver
-	./sudpserver -cos 4021
+	./sudpserver -cosv 4021
 
 sudpclient: client.o util.o
 	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} client.o util.o ${LDADD}

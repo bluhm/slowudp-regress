@@ -49,7 +49,7 @@ int			 family = PF_UNSPEC;
 const char		*host, *port;
 unsigned int		 delay_bound = 10;
 unsigned int		 socket_number = 1000;
-int			 connected, oneshot;
+int			 connected, oneshot, verbose;
 char			 laddress[NI_MAXHOST], lservice[NI_MAXSERV];
 
 int
@@ -59,7 +59,7 @@ main(int argc, char *argv[])
 	const char	*errstr;
 	int		 ch;
 
-	while ((ch = getopt(argc, argv, "46b:cn:or:s")) != -1) {
+	while ((ch = getopt(argc, argv, "46b:cn:or:sv")) != -1) {
 		switch (ch) {
 		case '4':
 			family = PF_INET;
@@ -90,6 +90,9 @@ main(int argc, char *argv[])
 			break;
 		case 's':
 			statistics = 1;
+			break;
+		case 'v':
+			verbose = 1;
 			break;
 		default:
 			usage();
@@ -326,8 +329,9 @@ socket_init(void)
 			continue;
 		}
 
-		printf("%s local address %s, service %s\n",
-		    getprogname(), laddress, lservice);
+		if (verbose)
+			printf("%s local address %s, service %s\n",
+			    getprogname(), laddress, lservice);
 		laddr[nsock] = res->ai_addr;
 		laddrlen[nsock] = res->ai_addrlen;
 		sfamily[nsock] = res->ai_family;
@@ -368,7 +372,7 @@ void
 usage(void)
 {
 	(void)fprintf(stderr,
-	    "usage: %s [-46cos] [-b bind] [-d delay] [-n num] port\n"
+	    "usage: %s [-46cosv] [-b bind] [-d delay] [-n num] port\n"
 	    "    -4  IPv4 only\n"
 	    "    -6  IPv6 only\n"
 	    "    -b  bind socket to address\n"
@@ -376,7 +380,8 @@ usage(void)
 	    "    -d  maximum delay for the response in seconds (%u)\n"
 	    "    -n  maximum number of simultanously bind sockets (%u)\n"
 	    "    -o  oneshot, do not reopen socket\n"
-	    "    -s  print statistics every second\n",
+	    "    -s  print statistics every second\n"
+	    "    -v  be verbose, print address and service\n",
 	    getprogname(), socket_number, delay_bound);
 	exit(2);
 }

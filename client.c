@@ -46,7 +46,7 @@ const char		*host, *port;
 int			 family = PF_UNSPEC;
 unsigned int		 resend_bound = 10, wait_bound = 30;
 unsigned int		 socket_number = 1000;
-int			 connected, oneshot;
+int			 connected, oneshot, verbose;
 struct sockaddr_storage	 laddr;
 const struct sockaddr	*faddr;
 socklen_t		 laddrlen, faddrlen;
@@ -61,7 +61,7 @@ main(int argc, char *argv[])
 	const char	*errstr;
 	int		 ch;
 
-	while ((ch = getopt(argc, argv, "46cn:or:sw:")) != -1) {
+	while ((ch = getopt(argc, argv, "46cn:or:svw:")) != -1) {
 		switch (ch) {
 		case '4':
 			family = PF_INET;
@@ -89,6 +89,9 @@ main(int argc, char *argv[])
 			break;
 		case 's':
 			statistics = 1;
+			break;
+		case 'v':
+			verbose = 1;
 			break;
 		case 'w':
 			wait_bound = strtonum(optarg, 1, 60, &errstr);
@@ -285,8 +288,9 @@ socket_init(void)
 	if (s == -1)
 		err(1, "%s foreign address %s, service %s",
 		    cause, faddress, fservice);
-	printf("%s foreign address %s, service %s\n",
-	    getprogname(), faddress, fservice);
+	if (verbose)
+		printf("%s foreign address %s, service %s\n",
+		    getprogname(), faddress, fservice);
 	faddr = res->ai_addr;
 	faddrlen = res->ai_addrlen;
 	family = res->ai_family;
@@ -316,8 +320,9 @@ socket_init(void)
 		if (error)
 			errx(1, "getnameinfo local: %s", gai_strerror(error));
 
-		printf("%s local address %s, service %s\n",
-		    getprogname(), laddress, lservice);
+		if (verbose)
+			printf("%s local address %s, service %s\n",
+			    getprogname(), laddress, lservice);
 	}
 	if (close(s) == -1)
 		err(1, "close");
@@ -334,7 +339,7 @@ void
 usage(void)
 {
 	(void)fprintf(stderr,
-	    "usage: %s [-46cos] [-n num] [-r resend] [-w wait] host port\n"
+	    "usage: %s [-46cosv] [-n num] [-r resend] [-w wait] host port\n"
 	    "    -4  IPv4 only\n"
 	    "    -6  IPv6 only\n"
 	    "    -c  use connected sockets to send packets\n"
@@ -342,6 +347,7 @@ usage(void)
 	    "    -o  oneshot, do not reopen socket\n"
 	    "    -r  maximum resend timeout for the query in seconds (%u)\n"
 	    "    -s  print statistics every second\n"
+	    "    -v  be verbose, print address and service\n"
 	    "    -w  maximum wait timeout for the response in seconds (%u)\n",
 	    getprogname(), socket_number, resend_bound, wait_bound);
 	exit(2);
