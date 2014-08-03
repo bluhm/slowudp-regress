@@ -216,8 +216,10 @@ socket_callback(int s, short event, void *arg)
 	 * We close the connection after we got a response or reached the
 	 * wait interval.
 	 */
-	if (close(s) == -1)
-		err(1, "close");
+	if (connected) {
+		if (close(s) == -1)
+			err(1, "close");
+	}
 	event_del(&et->et_event);
 	free(et);
 	stat_open--;
