@@ -192,8 +192,16 @@ socket_read(int s, struct event_addr *ea)
 			if (bind(s, ea->ea_laddr, ea->ea_laddrlen) == -1)
 				err(1, "bind");
 			if (connect(s, (struct sockaddr *)&ef->ea_faddr,
-			    ef->ea_faddrlen) == -1)
+			    ef->ea_faddrlen) == -1) {
+				if (errno == EADDRINUSE) {
+					stat_error++;
+					if (close(s) == -1)
+						err(1, "close");
+					free(ef);
+					return;
+				}
 				err(1, "connect");
+			}
 		}
 		event_set(&ef->ea_event, s, connected ? EV_READ|EV_TIMEOUT :
 		    EV_TIMEOUT, socket_callback, ef);
