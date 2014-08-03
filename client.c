@@ -37,7 +37,7 @@ struct event_time {
 
 void	 usage(void);
 void	 socket_init(void);
-void	 socket_start(void);
+void	 socket_start(int);
 void	 socket_write(int, struct event_time *);
 void	 socket_callback(int, short, void *);
 
@@ -134,20 +134,22 @@ main(int argc, char *argv[])
 }
 
 void
-socket_start(void)
+socket_start(int s)
 {
 	struct event_time	*et;
-	int			 s;
 
 	/*
 	 * Create and bind a socket, send a packet and wait for the
 	 * response.  Also add a retransmit and wait timeout.
 	 */
-	if ((s = socket(family, socktype, protocol)) == -1)
-		err(1, "socket: family %d, socktype %d, protocol %d",
-		    family, socktype, protocol);
-	if (connect(s, addr, addrlen) == -1)
-		err(1, "connect: address %s, service %s", address, service);
+	if (connected) {
+		if ((s = socket(family, socktype, protocol)) == -1)
+			err(1, "socket: family %d, socktype %d, protocol %d",
+			    family, socktype, protocol);
+		if (connect(s, addr, addrlen) == -1)
+			err(1, "connect: address %s, service %s",
+			    address, service);
+	}
 	if ((et = malloc(sizeof(*et))) == NULL)
 		err(1, "malloc");
 	event_set(&et->et_event, s, EV_READ, socket_callback, et);
@@ -224,7 +226,7 @@ socket_callback(int s, short event, void *arg)
 	free(et);
 	stat_open--;
 	if (!oneshot)
-		socket_start();
+		socket_start(s);
 	if (oneshot && stat_open == 0) {
 		if (!connected) {
 			event_del(&etime->et_event);
@@ -309,7 +311,7 @@ socket_init(void)
 	 * loop.  The kernel automatically binds the local address.
 	 */
 	for (n = 0; n < socket_number; n++)
-		socket_start();
+		socket_start(s);
 }
 
 void
