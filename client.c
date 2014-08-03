@@ -48,8 +48,9 @@ int			 family = PF_UNSPEC;
 unsigned int		 resend_bound = 10, wait_bound = 30;
 unsigned int		 socket_number = 1000;
 int			 connected, oneshot;
+struct sockaddr_storage	 laddr;
 const struct sockaddr	*faddr;
-socklen_t		 faddrlen;
+socklen_t		 laddrlen, faddrlen;
 int			 socktype, protocol;
 char			 laddress[NI_MAXHOST], lservice[NI_MAXSERV],
 			 faddress[NI_MAXHOST], fservice[NI_MAXSERV];
@@ -240,12 +241,10 @@ socket_callback(int s, short event, void *arg)
 void
 socket_init(void)
 {
-	struct sockaddr_storage	 laddr;
-	struct addrinfo		 hints, *res, *res0;
-	const char		*cause = NULL;
-	socklen_t		 laddrlen;
-	int			 error, save_errno, s;
-	unsigned int		 n;
+	struct addrinfo	 hints, *res, *res0;
+	const char	*cause = NULL;
+	int		 error, save_errno, s;
+	unsigned int	 n;
 
 	/*
 	 * Find a suitable connect address and remember it.  Create
