@@ -51,7 +51,8 @@ int			 connected, oneshot;
 const struct sockaddr	*addr;
 socklen_t		 addrlen;
 int			 socktype, protocol;
-char			 address[NI_MAXHOST], service[NI_MAXSERV];
+char			 laddress[NI_MAXHOST], lservice[NI_MAXSERV],
+			 faddress[NI_MAXHOST], fservice[NI_MAXSERV];
 
 int
 main(int argc, char *argv[])
@@ -147,8 +148,8 @@ socket_start(int s)
 			err(1, "socket: family %d, socktype %d, protocol %d",
 			    family, socktype, protocol);
 		if (connect(s, addr, addrlen) == -1)
-			err(1, "connect: address %s, service %s",
-			    address, service);
+			err(1, "connect foreign address %s, service %s",
+			    faddress, fservice);
 	}
 	if ((et = malloc(sizeof(*et))) == NULL)
 		err(1, "malloc");
@@ -267,8 +268,8 @@ socket_init(void)
 			continue;
 		}
 
-		error = getnameinfo(res->ai_addr, res->ai_addrlen, address,
-		    sizeof(address), service, sizeof(service),
+		error = getnameinfo(res->ai_addr, res->ai_addrlen, faddress,
+		    sizeof(faddress), fservice, sizeof(fservice),
 		    NI_NUMERICHOST | NI_NUMERICSERV);
 		if (error)
 			errx(1, "getnameinfo: %s", gai_strerror(error));
@@ -286,10 +287,11 @@ socket_init(void)
 		break;
 	}
 	if (s == -1)
-		err(1, "%s address %s, service %s", cause, address, service);
+		err(1, "%s foreign address %s, service %s",
+		    cause, faddress, fservice);
 	if (close(s) == -1)
 		err(1, "close");
-	printf("connect address %s, service %s\n", address, service);
+	printf("foreign address %s, service %s\n", faddress, fservice);
 	addr = res->ai_addr;
 	addrlen = res->ai_addrlen;
 	family = res->ai_family;

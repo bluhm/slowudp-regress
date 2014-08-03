@@ -50,6 +50,7 @@ const char		*host, *port;
 unsigned int		 delay_bound = 10;
 unsigned int		 socket_number = 1000;
 int			 connected, oneshot;
+char			 laddress[NI_MAXHOST], lservice[NI_MAXSERV];
 
 int
 main(int argc, char *argv[])
@@ -260,7 +261,6 @@ socket_init(void)
 	const struct sockaddr	**addr;
 	socklen_t		*addrlen;
 	int			*sfamily, *socktype, *protocol;
-	char			 address[NI_MAXHOST], service[NI_MAXSERV];
 
 	/*
 	 * Create sockets and bind them for all suitable addresses.
@@ -288,7 +288,6 @@ socket_init(void)
 		errx(1, "getaddrinfo host %s, port %s: %s",
 		    host, port, gai_strerror(error));
 	nsock = 0;
-	*address = *service = '\0';
 	for (res = res0; res && nsock < socket_number; res = res->ai_next) {
 		s[nsock] = socket(res->ai_family, res->ai_socktype,
 		    res->ai_protocol);
@@ -297,8 +296,8 @@ socket_init(void)
 			continue;
 		}
 
-		error = getnameinfo(res->ai_addr, res->ai_addrlen, address,
-		    sizeof(address), service, sizeof(service),
+		error = getnameinfo(res->ai_addr, res->ai_addrlen, laddress,
+		    sizeof(laddress), lservice, sizeof(lservice),
 		    NI_NUMERICHOST | NI_NUMERICSERV);
 		if (error)
 			errx(1, "getnameinfo: %s", gai_strerror(error));
@@ -319,7 +318,7 @@ socket_init(void)
 			continue;
 		}
 
-		printf("bind address %s, service %s\n", address, service);
+		printf("local address %s, service %s\n", laddress, lservice);
 		addr[nsock] = res->ai_addr;
 		addrlen[nsock] = res->ai_addrlen;
 		sfamily[nsock] = res->ai_family;
@@ -328,7 +327,8 @@ socket_init(void)
 		nsock++;
 	}
 	if (nsock == 0)
-		err(1, "%s address %s, service %s", cause, address, service);
+		err(1, "%s local address %s, service %s",
+		    cause, laddress, lservice);
 	/* don't call freeaddrinfo(res0), addr is still referenced */
 
 	/*
