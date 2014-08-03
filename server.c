@@ -149,14 +149,14 @@ socket_read(int s, struct event_addr *ea)
 			return;
 		}
 	} else {
+		struct event_addr	*ef;
+
 		/*
 		 * Create an event that is used to send the resonse.  The
 		 * local address is the same as we used to bind the socket
 		 * where we received the packet.  The foreign address is
 		 * taken from the query packet.  The response gets delayed.
 		 */
-		struct event_addr	*ef;
-
 		if ((ef = malloc(sizeof(*ef))) == NULL)
 			err(1, "malloc");
 		ef->ea_laddrlen = ef->ea_faddrlen = 0;
@@ -169,13 +169,13 @@ socket_read(int s, struct event_addr *ea)
 			return;
 		}
 		if (connected) {
+			int	 optval;
+
 			/*
 			 * We should use a connected socket, but received
 			 * the packet on the unconnected bind socket.  So
 			 * we need an additional socket.
 			 */
-			int	 optval;
-
 			if ((s = socket(ea->ea_family, ea->ea_socktype,
 			    ea->ea_protocol)) == -1) {
 				if (errno == EMFILE) {
