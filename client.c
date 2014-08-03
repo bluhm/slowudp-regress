@@ -268,11 +268,11 @@ socket_init(void)
 			continue;
 		}
 
-		error = getnameinfo(res->ai_addr, res->ai_addrlen, faddress,
-		    sizeof(faddress), fservice, sizeof(fservice),
-		    NI_NUMERICHOST | NI_NUMERICSERV);
+		error = getnameinfo(res->ai_addr, res->ai_addrlen,
+		    faddress, sizeof(faddress), fservice, sizeof(fservice),
+		    NI_DGRAM | NI_NUMERICHOST | NI_NUMERICSERV);
 		if (error)
-			errx(1, "getnameinfo: %s", gai_strerror(error));
+			errx(1, "getnameinfo foreign: %s", gai_strerror(error));
 
 		if (connect(s, res->ai_addr, res->ai_addrlen) == -1) {
 			cause = "connect";
@@ -289,6 +289,23 @@ socket_init(void)
 	if (s == -1)
 		err(1, "%s foreign address %s, service %s",
 		    cause, faddress, fservice);
+
+	if (!connected) {
+		struct sockaddr_storage	 laddr;
+		socklen_t		 laddrlen;
+
+		laddrlen = sizeof(laddr);
+		if (getsockname(s, (struct sockaddr *)&laddr, &laddrlen) == -1)
+			err(1, "getsockname");
+		error = getnameinfo((struct sockaddr *)&laddr, laddrlen,
+		    laddress, sizeof(laddress), lservice, sizeof(lservice),
+		    NI_DGRAM | NI_NUMERICHOST | NI_NUMERICSERV);
+		if (error)
+			errx(1, "getnameinfo local: %s", gai_strerror(error));
+
+		printf("local address %s, service %s\n", laddress, lservice);
+	}
+
 	if (close(s) == -1)
 		err(1, "close");
 	printf("foreign address %s, service %s\n", faddress, fservice);

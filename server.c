@@ -296,11 +296,11 @@ socket_init(void)
 			continue;
 		}
 
-		error = getnameinfo(res->ai_addr, res->ai_addrlen, laddress,
-		    sizeof(laddress), lservice, sizeof(lservice),
-		    NI_NUMERICHOST | NI_NUMERICSERV);
+		error = getnameinfo(res->ai_addr, res->ai_addrlen,
+		    laddress, sizeof(laddress), lservice, sizeof(lservice),
+		    NI_DGRAM | NI_NUMERICHOST | NI_NUMERICSERV);
 		if (error)
-			errx(1, "getnameinfo: %s", gai_strerror(error));
+			errx(1, "getnameinfo local: %s", gai_strerror(error));
 
 		if (connected) {
 			int	 optval = 1;
