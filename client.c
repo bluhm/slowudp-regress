@@ -303,12 +303,14 @@ socket_init(void)
 		if (error)
 			errx(1, "getnameinfo local: %s", gai_strerror(error));
 
-		printf("local address %s, service %s\n", laddress, lservice);
+		printf("%s local address %s, service %s\n",
+		    getprogname(), laddress, lservice);
 	}
 
 	if (close(s) == -1)
 		err(1, "close");
-	printf("foreign address %s, service %s\n", faddress, fservice);
+	printf("%s foreign address %s, service %s\n",
+	    getprogname(), faddress, fservice);
 	addr = res->ai_addr;
 	addrlen = res->ai_addrlen;
 	family = res->ai_family;

@@ -318,7 +318,8 @@ socket_init(void)
 			continue;
 		}
 
-		printf("local address %s, service %s\n", laddress, lservice);
+		printf("%s local address %s, service %s\n",
+		    getprogname(), laddress, lservice);
 		addr[nsock] = res->ai_addr;
 		addrlen[nsock] = res->ai_addrlen;
 		sfamily[nsock] = res->ai_family;
