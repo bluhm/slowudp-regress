@@ -42,7 +42,6 @@ void	 socket_write(int, struct event_time *);
 void	 socket_callback(int, short, void *);
 
 struct event_base	*eb;
-struct event_time	*etime;
 const char		*host, *port;
 int			 family = PF_UNSPEC;
 unsigned int		 resend_bound = 10, wait_bound = 30;
@@ -144,13 +143,17 @@ socket_start(int s)
 	 * Create and bind a socket, send a packet and wait for the
 	 * response.  Also add a retransmit and wait timeout.
 	 */
+	if ((s = socket(family, socktype, protocol)) == -1)
+		err(1, "socket: family %d, socktype %d, protocol %d",
+		    family, socktype, protocol);
 	if (connected) {
-		if ((s = socket(family, socktype, protocol)) == -1)
-			err(1, "socket: family %d, socktype %d, protocol %d",
-			    family, socktype, protocol);
 		if (connect(s, faddr, faddrlen) == -1)
 			err(1, "connect foreign address %s, service %s",
 			    faddress, fservice);
+	} else {
+		if (bind(s, (struct sockaddr *)&laddr, laddrlen) == -1)
+			err(1, "bind local address %s, service %s",
+			    laddress, lservice);
 	}
 	if ((et = malloc(sizeof(*et))) == NULL)
 		err(1, "malloc");
@@ -220,20 +223,14 @@ socket_callback(int s, short event, void *arg)
 	 * We close the connection after we got a response or reached the
 	 * wait interval.
 	 */
-	if (connected) {
-		if (close(s) == -1)
-			err(1, "close");
-	}
+	if (close(s) == -1)
+		err(1, "close");
 	event_del(&et->et_event);
 	free(et);
 	stat_open--;
 	if (!oneshot)
 		socket_start(s);
 	if (oneshot && stat_open == 0) {
-		if (!connected) {
-			event_del(&etime->et_event);
-			free(etime);
-		}
 		statistic_destroy();
 	}
 }
@@ -288,10 +285,31 @@ socket_init(void)
 	if (s == -1)
 		err(1, "%s foreign address %s, service %s",
 		    cause, faddress, fservice);
+	printf("%s foreign address %s, service %s\n",
+	    getprogname(), faddress, fservice);
+	faddr = res->ai_addr;
+	faddrlen = res->ai_addrlen;
+	family = res->ai_family;
+	socktype = res->ai_socktype;
+	protocol= res->ai_protocol;
+	/* don't call freeaddrinfo(res0), addr is still referenced */
+
 	if (!connected) {
+		/*
+		 * We need multiple bind sockets.  They should be bound to
+		 * the same address but use random ports.
+		 */
 		laddrlen = sizeof(laddr);
 		if (getsockname(s, (struct sockaddr *)&laddr, &laddrlen) == -1)
 			err(1, "getsockname");
+		switch (family) {
+		case AF_INET:
+			((struct sockaddr_in *)&laddr)->sin_port = 0;
+			break;
+		case AF_INET6:
+			((struct sockaddr_in6 *)&laddr)->sin6_port = 0;
+			break;
+		}
 		error = getnameinfo((struct sockaddr *)&laddr, laddrlen,
 		    laddress, sizeof(laddress), lservice, sizeof(lservice),
 		    NI_DGRAM | NI_NUMERICHOST | NI_NUMERICSERV);
@@ -303,28 +321,6 @@ socket_init(void)
 	}
 	if (close(s) == -1)
 		err(1, "close");
-	printf("%s foreign address %s, service %s\n",
-	    getprogname(), faddress, fservice);
-	faddr = res->ai_addr;
-	faddrlen = res->ai_addrlen;
-	family = res->ai_family;
-	socktype = res->ai_socktype;
-	protocol= res->ai_protocol;
-	/* don't call freeaddrinfo(res0), addr is still referenced */
-
-	if (!connected) {
-		if ((s = socket(family, socktype, protocol)) == -1)
-			err(1, "socket: family %d, socktype %d, protocol %d",
-			    family, socktype, protocol);
-		if (bind(s, (struct sockaddr *)&laddr, laddrlen) == -1)
-			err(1, "bind local address %s, service %s",
-			    laddress, lservice);
-		if ((etime = malloc(sizeof(*etime))) == NULL)
-			err(1, "malloc");
-		event_set(&etime->et_event, s, EV_READ|EV_PERSIST,
-		    socket_callback, etime);
-		event_add(&etime->et_event, NULL);
-	}
 
 	/*
 	 * Create and connect all sockets and hook them into the event
