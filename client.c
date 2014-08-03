@@ -263,6 +263,12 @@ socket_init(void)
 			continue;
 		}
 
+		error = getnameinfo(res->ai_addr, res->ai_addrlen, address,
+		    sizeof(address), service, sizeof(service),
+		    NI_NUMERICHOST | NI_NUMERICSERV);
+		if (error)
+			errx(1, "getnameinfo: %s", gai_strerror(error));
+
 		if (connect(s, res->ai_addr, res->ai_addrlen) == -1) {
 			cause = "connect";
 			save_errno = errno;
@@ -276,18 +282,14 @@ socket_init(void)
 		break;
 	}
 	if (s == -1)
-		err(1, "%s", cause);
+		err(1, "%s address %s, service %s", cause, address, service);
+	printf("connect address %s, service %s\n", address, service);
 	addr = res->ai_addr;
 	addrlen = res->ai_addrlen;
 	family = res->ai_family;
 	socktype = res->ai_socktype;
 	protocol= res->ai_protocol;
 	/* don't call freeaddrinfo(res0), addr is still referenced */
-
-	error = getnameinfo(addr, addrlen, address, sizeof(address), service,
-	    sizeof(service), NI_NUMERICHOST | NI_NUMERICSERV);
-	if (error)
-		errx(1, "getnameinfo: %s", gai_strerror(error));
 
 	if (connected) {
 		if (close(s) == -1)
@@ -304,7 +306,6 @@ socket_init(void)
 	 * Create and connect all sockets and hook them into the event
 	 * loop.  The kernel automatically binds the local address.
 	 */
-	printf("connect address %s, service %s\n", address, service);
 	for (n = 0; n < socket_number; n++)
 		socket_start();
 }

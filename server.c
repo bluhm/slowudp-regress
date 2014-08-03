@@ -290,18 +290,18 @@ socket_init(void)
 	nsock = 0;
 	*address = *service = '\0';
 	for (res = res0; res && nsock < socket_number; res = res->ai_next) {
-		error = getnameinfo(res->ai_addr, res->ai_addrlen, address,
-		    sizeof(address), service, sizeof(service),
-		    NI_NUMERICHOST | NI_NUMERICSERV);
-		if (error)
-			errx(1, "getnameinfo: %s", gai_strerror(error));
-
 		s[nsock] = socket(res->ai_family, res->ai_socktype,
 		    res->ai_protocol);
 		if (s[nsock] == -1) {
 			cause = "socket";
 			continue;
 		}
+
+		error = getnameinfo(res->ai_addr, res->ai_addrlen, address,
+		    sizeof(address), service, sizeof(service),
+		    NI_NUMERICHOST | NI_NUMERICSERV);
+		if (error)
+			errx(1, "getnameinfo: %s", gai_strerror(error));
 
 		if (connected) {
 			int	 optval = 1;
@@ -328,7 +328,7 @@ socket_init(void)
 		nsock++;
 	}
 	if (nsock == 0)
-		err(1, "%s: address %s, service %s", cause, address, service);
+		err(1, "%s address %s, service %s", cause, address, service);
 	/* don't call freeaddrinfo(res0), addr is still referenced */
 
 	/*
