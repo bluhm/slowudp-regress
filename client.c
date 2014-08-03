@@ -240,12 +240,12 @@ socket_callback(int s, short event, void *arg)
 void
 socket_init(void)
 {
-	struct addrinfo	 hints, *res, *res0;
-	int		 error;
-	int		 save_errno;
-	int		 s;
-	unsigned int	 n;
-	const char	*cause = NULL;
+	struct sockaddr_storage	 laddr;
+	struct addrinfo		 hints, *res, *res0;
+	const char		*cause = NULL;
+	socklen_t		 laddrlen;
+	int			 error, save_errno, s;
+	unsigned int		 n;
 
 	/*
 	 * Find a suitable connect address and remember it.  Create
@@ -289,11 +289,7 @@ socket_init(void)
 	if (s == -1)
 		err(1, "%s foreign address %s, service %s",
 		    cause, faddress, fservice);
-
 	if (!connected) {
-		struct sockaddr_storage	 laddr;
-		socklen_t		 laddrlen;
-
 		laddrlen = sizeof(laddr);
 		if (getsockname(s, (struct sockaddr *)&laddr, &laddrlen) == -1)
 			err(1, "getsockname");
@@ -306,7 +302,6 @@ socket_init(void)
 		printf("%s local address %s, service %s\n",
 		    getprogname(), laddress, lservice);
 	}
-
 	if (close(s) == -1)
 		err(1, "close");
 	printf("%s foreign address %s, service %s\n",
@@ -322,6 +317,9 @@ socket_init(void)
 		if ((s = socket(family, socktype, protocol)) == -1)
 			err(1, "socket: family %d, socktype %d, protocol %d",
 			    family, socktype, protocol);
+		if (bind(s, (struct sockaddr *)&laddr, laddrlen) == -1)
+			err(1, "bind local address %s, service %s",
+			    laddress, lservice);
 		if ((etime = malloc(sizeof(*etime))) == NULL)
 			err(1, "malloc");
 		event_set(&etime->et_event, s, EV_READ|EV_PERSIST,
