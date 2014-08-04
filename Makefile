@@ -67,9 +67,15 @@ STAMP_REMOTE =	stamp-scp
 CLIENT =	${SSH} ./sudpclient ${ONESHOT} -v
 SERVER =	./sudpserver ${ONESHOT} -sv ${BIND}
 
+.PHONY: kill
+
+# copy client and server program to remote test machine
+kill:
+	${SSH} pkill sudpclient || true
+	pkill sudpserver || true
+
 # copy client and server program to remote test machine
 stamp-scp: sudpclient sudpserver
-	-ssh ${REMOTE_SSH} pkill sudpclient sudpserver
 	scp sudpclient sudpserver ${REMOTE_SSH}:
 	date >$@
 
@@ -81,7 +87,7 @@ stamp-pfctl:
 
 REGRESS_TARGETS =	run-regress-client run-regress-server
 
-regress: sudpclient sudpserver ${STAMP_REMOTE}
+regress: sudpclient sudpserver kill ${STAMP_REMOTE}
 	@echo '\n======== $@ ========'
 	cd ${.CURDIR} && ${MAKE} -j 6 \
 	    run-regress-server-bind run-regress-server-connect \
