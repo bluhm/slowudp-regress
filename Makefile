@@ -8,14 +8,12 @@
 
 LOCAL_ADDR ?=
 REMOTE_ADDR ?=
-LOCAL_ADDR6 ?=
-REMOTE_ADDR6 ?=
 REMOTE_SSH ?=
 
 # compile client and server program for send and receive test packets
 
 SRCS =		client.c server.c util.c
-CLEANFILES +=	*.o ktrace.out sudpclient sudpserver
+CLEANFILES +=	*.o stamp-* ktrace.out sudpclient sudpserver
 CDIAGFLAGS +=	-Wall -Werror \
 		-Wbad-function-cast \
 		-Wcast-align \
@@ -32,32 +30,62 @@ LDFLAGS =	-levent
 NOMAN =		yes
 WARNINGS =	yes
 
+prog: sudpclient sudpserver
 sudpclient: client.o util.o
 	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} client.o util.o ${LDADD}
 sudpserver: server.o util.o
 	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} server.o util.o ${LDADD}
 
-# run regression tests
+# run regression tests, client may run on the remote machine
+
+PORT1 ?=	12345
+PORT2 ?=	54321
+
+.if empty (REMOTE_SSH)
+HOST =		localhost
+BIND =
+STAMP_SCP =
+SSH =
+.else
+HOST =		${LOCAL_ADDR}
+BIND =		-b ${LOCAL_ADDR}
+STAMP_SCP =	stamp-scp
+SSH =		ssh ${REMOTE_SSH}
+.endif
+
+.if defined(REGRESS_SKIP_SLOW) && ${REGRESS_SKIP_SLOW} != no
+ONESHOT =	-o
+.else
+ONESHOT ?=
+.endif
+
+CLIENT =	${SSH} ./sudpclient ${ONESHOT} -v
+SERVER =	./sudpserver ${ONESHOT} -sv ${BIND}
 
 REGRESS_TARGETS =	run-regress-client run-regress-server
 
-regress: sudpclient sudpserver
+regress: sudpclient sudpserver ${STAMP_SCP}
 	cd ${.CURDIR} && ${MAKE} -j 6 \
 	    run-regress-server-bind run-regress-server-connect \
 	    run-regress-client-bind-bind run-regress-client-bind-connect \
 	    run-regress-client-connect-bind run-regress-client-connect-connect
 
+stamp-scp: sudpclient sudpserver
+	-ssh ${REMOTE_SSH} pkill sudpclient sudpserver
+	scp sudpclient sudpserver ${REMOTE_SSH}:
+	date >$@
+
 run-regress-client-bind-bind: sudpclient
-	./sudpclient -osv localhost 4020
+	${CLIENT} ${HOST} ${PORT1}
 run-regress-client-bind-connect: sudpclient
-	./sudpclient -osv localhost 4021
+	${CLIENT} ${HOST} ${PORT2}
 run-regress-client-connect-bind: sudpclient
-	./sudpclient -cosv localhost 4020
+	${CLIENT} -c ${HOST} ${PORT1}
 run-regress-client-connect-connect: sudpclient
-	./sudpclient -cosv localhost 4021
+	${CLIENT} -c ${HOST} ${PORT2}
 run-regress-server-bind: sudpserver
-	./sudpserver -osv 4020
+	${SERVER} ${PORT1}
 run-regress-server-connect: sudpserver
-	./sudpserver -cosv 4021
+	${SERVER} -c ${PORT2}
 
 .include <bsd.regress.mk>
