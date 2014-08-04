@@ -51,21 +51,17 @@ PORT1 ?=	12345
 PORT2 ?=	54321
 
 .if empty (REMOTE_SSH)
+SSH =
+ONESHOT =	-o
 HOST =		localhost
 BIND =
 STAMP_REMOTE =
-SSH =
 .else
+SSH =		ssh ${REMOTE_SSH}
+ONESHOT =
 HOST =		${LOCAL_ADDR}
 BIND =		-b ${LOCAL_ADDR}
 STAMP_REMOTE =	stamp-scp
-SSH =		ssh ${REMOTE_SSH}
-.endif
-
-.if defined(REGRESS_SKIP_SLOW) && ${REGRESS_SKIP_SLOW} != no
-ONESHOT =	-o
-.else
-ONESHOT ?=
 .endif
 
 CLIENT =	${SSH} ./sudpclient ${ONESHOT} -v
