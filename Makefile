@@ -64,8 +64,8 @@ BIND =		-b ${LOCAL_ADDR}
 STAMP_REMOTE =	stamp-scp stamp-pfctl
 .endif
 
-CLIENT =	${SSH} ./sudpclient ${ONESHOT} -v
-SERVER =	./sudpserver ${ONESHOT} -sv ${BIND}
+CLIENT =	${SSH} ./sudpclient ${ONESHOT} -v -r 3 -w 10 -n 300
+SERVER =	./sudpserver ${ONESHOT} -sv -n 1000 ${BIND}
 
 .PHONY: kill
 
@@ -81,7 +81,7 @@ stamp-scp: sudpclient sudpserver
 
 # load the pf rules into the kernel of the remote machine
 stamp-pfctl:
-	echo pass out proto udp to ${LOCAL_ADDRESS} port { ${PORT1} ${PORT2} } \
+	echo pass out proto udp to ${LOCAL_ADDR} port { ${PORT1} ${PORT2} } \
 	    divert-reply | ssh ${REMOTE_SSH} ${SUDO} pfctl -a regress -f -
 	@date >$@
 
