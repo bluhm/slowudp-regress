@@ -1,3 +1,19 @@
+# Fill out these variables as you have to test divert with the pf
+# kernel running on a remote machine.  You have to specify a local
+# and remote ip address for the test connections.
+# You must have an anchor "regress" for the divert rules in the pf.conf
+# of the remote machine.  The kernel of the remote machine gets testet.
+#
+# Run make check-setup to see if you got the setup correct.
+
+LOCAL_ADDR ?=
+REMOTE_ADDR ?=
+LOCAL_ADDR6 ?=
+REMOTE_ADDR6 ?=
+REMOTE_SSH ?=
+
+# compile client and server program for send and receive test packets
+
 SRCS =		client.c server.c util.c
 CLEANFILES +=	*.o ktrace.out sudpclient sudpserver
 CDIAGFLAGS +=	-Wall -Werror \
@@ -15,6 +31,13 @@ DEBUG =		-g
 LDFLAGS =	-levent
 NOMAN =		yes
 WARNINGS =	yes
+
+sudpclient: client.o util.o
+	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} client.o util.o ${LDADD}
+sudpserver: server.o util.o
+	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} server.o util.o ${LDADD}
+
+# run regression tests
 
 REGRESS_TARGETS =	run-regress-client run-regress-server
 
@@ -36,10 +59,5 @@ run-regress-server-bind: sudpserver
 	./sudpserver -osv 4020
 run-regress-server-connect: sudpserver
 	./sudpserver -cosv 4021
-
-sudpclient: client.o util.o
-	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} client.o util.o ${LDADD}
-sudpserver: server.o util.o
-	${CC} ${LDFLAGS} ${LDSTATIC} -o ${.TARGET} server.o util.o ${LDADD}
 
 .include <bsd.regress.mk>
