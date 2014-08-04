@@ -147,7 +147,7 @@ socket_start(int s)
 	 * response.  Also add a retransmit and wait timeout.
 	 */
 	if ((s = socket(family, socktype, protocol)) == -1)
-		err(1, "socket: family %d, socktype %d, protocol %d",
+		err(1, "socket family %d, socktype %d, protocol %d",
 		    family, socktype, protocol);
 	if (connected) {
 		if (connect(s, faddr, faddrlen) == -1)
