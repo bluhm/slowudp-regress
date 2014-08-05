@@ -47,6 +47,7 @@ const char		*host, *port;
 int			 family = PF_UNSPEC;
 unsigned int		 delay_bound = 10;
 unsigned int		 socket_number = 1000;
+unsigned int		 icmp_percentage = 0;
 int			 connected, oneshot, verbose;
 char			 laddress[NI_MAXHOST], lservice[NI_MAXSERV];
 
@@ -54,12 +55,13 @@ void
 usage(void)
 {
 	(void)fprintf(stderr,
-	    "usage: %s [-46cosv] [-b bind] [-d delay] [-n num] port\n"
+	    "usage: %s [-46cosv] [-b bind] [-d delay] [-i icmp] [-n num] port\n"
 	    "    -4  IPv4 only\n"
 	    "    -6  IPv6 only\n"
 	    "    -b  bind socket to address\n"
 	    "    -c  use connected sockets to send packets\n"
 	    "    -d  maximum delay for the response in seconds (%u)\n"
+	    "    -i  percentage of responses that are icmp errors\n"
 	    "    -n  maximum number of simultanously bind sockets (%u)\n"
 	    "    -o  oneshot, do not reopen socket\n"
 	    "    -s  print statistics every second\n"
@@ -74,7 +76,7 @@ setopt(int argc, char *argv[])
 	const char	*errstr;
 	int		 ch;
 
-	while ((ch = getopt(argc, argv, "46b:cd:n:osv")) != -1) {
+	while ((ch = getopt(argc, argv, "46b:cd:i:n:osv")) != -1) {
 		switch (ch) {
 		case '4':
 			family = PF_INET;
@@ -92,6 +94,12 @@ setopt(int argc, char *argv[])
 			delay_bound = strtonum(optarg, 1, 60, &errstr);
 			if (errstr)
 				errx(1, "delay boundary time is %s: %s",
+				    errstr, optarg);
+			break;
+		case 'i':
+			icmp_percentage = strtonum(optarg, 0, 100, &errstr);
+			if (errstr)
+				errx(1, "icmp error percentage is %s: %s",
 				    errstr, optarg);
 			break;
 		case 'n':
