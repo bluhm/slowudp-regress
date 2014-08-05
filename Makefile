@@ -54,7 +54,7 @@ PORT2 ?=	54321
 SSH =
 ONESHOT =	-o
 HOST =		localhost
-BIND =
+BIND =		-b 127.0.0.1
 STAMP_REMOTE =
 .else
 SSH =		ssh ${REMOTE_SSH}
@@ -64,8 +64,8 @@ BIND =		-b ${LOCAL_ADDR}
 STAMP_REMOTE =	stamp-scp stamp-pfctl
 .endif
 
-CLIENT =	${SSH} ./sudpclient ${ONESHOT} -v -r 3 -w 10 -n 300
-SERVER =	./sudpserver ${ONESHOT} -sv -n 1000 ${BIND}
+CLIENT =	${SSH} ./sudpclient ${ONESHOT} -v -r 3 -w 10 -n 300 -4
+SERVER =	${SUDO} ./sudpserver ${ONESHOT} -sv -n 1000 -i 90 -4 ${BIND}
 
 .PHONY: kill
 

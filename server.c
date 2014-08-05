@@ -302,7 +302,7 @@ socket_write(int s, struct event_addr *ea)
 		char		 packet[ICMP_MINLEN + sizeof(struct ip) +
 				    sizeof(struct udphdr)];
 		struct icmp	*icmp = (struct icmp *)packet;
-		struct ip	*ip = (struct ip *)(icmp + 1);
+		struct ip	*ip = (struct ip *)(packet + ICMP_MINLEN);
 		struct udphdr	*udp = (struct udphdr *)(ip + 1);
 
 		if (ea->ea_family != AF_INET)
@@ -317,13 +317,13 @@ socket_write(int s, struct event_addr *ea)
 		ip->ip_p = IPPROTO_UDP;
 		ip->ip_src = ((struct sockaddr_in *)&ea->ea_faddr)->sin_addr;
 		ip->ip_dst =
-		    ((const struct sockaddr_in *)ea->ea_laddr)-> sin_addr;
+		    ((const struct sockaddr_in *)ea->ea_laddr)->sin_addr;
 		udp->uh_sport = ((struct sockaddr_in *)&ea->ea_faddr)->sin_port;
 		udp->uh_dport =
 		    ((const struct sockaddr_in *)ea->ea_laddr)->sin_port;
 		udp->uh_ulen = htons(sizeof(struct udphdr));
 
-		if (sendto(sicmp, packet, sizeof(packet) - 1, 0,
+		if (sendto(sicmp, packet, sizeof(packet), 0,
 		    (struct sockaddr *)&ea->ea_faddr, ea->ea_faddrlen) == -1)
 			err(1, "sendto icmp");
 		stat_sndicmp++;
@@ -389,8 +389,6 @@ socket_init(void)
 {
 	struct event_addr	*ea;
 	struct addrinfo		 hints, *res, *res0;
-	struct sockaddr_in	 laddricmp;
-	socklen_t		 laddricmplen = 0;
 	const char		*cause = NULL;
 	const struct sockaddr	**lsa;
 	socklen_t		*lsalen;
@@ -481,10 +479,6 @@ socket_init(void)
 		socktype[nsock] = res->ai_socktype;
 		protocol[nsock] = res->ai_protocol;
 		nsock++;
-		if (icmp_percentage && res->ai_family == AF_INET) {
-			memcpy(&laddricmp, res->ai_addr, res->ai_addrlen);
-			laddricmplen = res->ai_addrlen;
-		}
 	}
 	if (nsock == 0)
 		err(1, "%s local address %s, service %s",
@@ -520,12 +514,9 @@ socket_init(void)
 	 * Create a raw socket to send and receive icmp error packets.
 	 * XXX IPv6 is not implemented.
 	 */
-	if (icmp_percentage && laddricmplen) {
+	if (icmp_percentage) {
 		if ((sicmp = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) == -1)
 			err(1, "socket icmp");
-		if (bind(sicmp, (struct sockaddr *)&laddricmp, laddricmplen)
-		    == -1)
-			err(1, "bind icmp");
 		event_set(&evicmp, sicmp, EV_READ|EV_PERSIST,
 		    icmp_callback, &evicmp);
 		event_add(&evicmp, NULL);
