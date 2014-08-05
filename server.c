@@ -40,9 +40,13 @@ struct event_addr {
 ssize_t	 socket_recv(int, struct event_addr *);
 void	 socket_read(int, struct event_addr *);
 void	 socket_callback(int, short, void *);
+void	 icmp_callback(int, short, void *);
 
 struct event_base	*eb;
 struct event_addr	*eladdr;
+struct event		 evicmp;
+int			 sicmp;
+int			 family = PF_UNSPEC;
 const char		*host, *port;
 int			 family = PF_UNSPEC;
 unsigned int		 delay_bound = 10;
@@ -318,23 +322,38 @@ socket_callback(int s, short event, void *arg)
 		for (ea = eladdr; ea->ea_lsalen; ea++)
 			event_del(&ea->ea_event);
 		free(eladdr);
+		event_del(&evicmp);
 		statistic_destroy();
 	}
 }
+
+void
+icmp_callback(int s, short event, void *arg)
+{
+	char	 rbuf[1500];
+
+	if (event & EV_READ) {
+		if (recv(s, rbuf, sizeof(rbuf), 0) == -1)
+			stat_error++;
+	}
+}
+
 
 void
 socket_init(void)
 {
 	struct event_addr	*ea;
 	struct addrinfo		 hints, *res, *res0;
-	int			*s;
-	int			 optval = 1;
-	int			 error, save_errno;
-	unsigned int		 nsock, n;
+	struct sockaddr_in	 laddricmp;
+	socklen_t		 laddricmplen = 0;
 	const char		*cause = NULL;
 	const struct sockaddr	**lsa;
 	socklen_t		*lsalen;
 	int			*sfamily, *socktype, *protocol;
+	int			*s;
+	int			 optval = 1;
+	int			 error, save_errno;
+	unsigned int		 nsock, n;
 
 	/*
 	 * Create sockets and bind them for all suitable addresses.
@@ -417,6 +436,10 @@ socket_init(void)
 		socktype[nsock] = res->ai_socktype;
 		protocol[nsock] = res->ai_protocol;
 		nsock++;
+		if (icmp_percentage && res->ai_family == AF_INET) {
+			memcpy(&laddricmp, res->ai_addr, res->ai_addrlen);
+			laddricmplen = res->ai_addrlen;
+		}
 	}
 	if (nsock == 0)
 		err(1, "%s local address %s, service %s",
@@ -447,4 +470,19 @@ socket_init(void)
 	free(socktype);
 	free(protocol);
 	freeaddrinfo(res0);
+
+	/*
+	 * Create a raw socket to send and receive icmp error packets.
+	 * XXX IPv6 is not implemented.
+	 */
+	if (icmp_percentage && laddricmplen) {
+		if ((sicmp = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) == -1)
+			err(1, "socket icmp");
+		if (bind(sicmp, (struct sockaddr *)&laddricmp, laddricmplen)
+		    == -1)
+			err(1, "bind icmp");
+		event_set(&evicmp, sicmp, EV_READ|EV_PERSIST,
+		    icmp_callback, &evicmp);
+		event_add(&evicmp, NULL);
+	}
 }
