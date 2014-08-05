@@ -31,7 +31,8 @@ struct event_base	*eb;
 struct event		 evstat;
 int			 statistics;
 unsigned int		 stat_open, stat_send, stat_snderr,
-			 stat_recv, stat_rcverr, stat_error;
+			 stat_recv, stat_rcverr, stat_error,
+			 stat_sndicmp, stat_rcvicmp;
 
 int
 main(int argc, char *argv[])
@@ -84,12 +85,14 @@ statistic_callback(int sig, short event, void *arg)
 	static int	 line;
 
 	if (line-- == 0 || (event & EV_SIGNAL)) {
-		printf(" %7s %7s %7s %7s %7s %7s\n", "open", "send", "snderr",
-		    "recv", "rcverr", "error");
+		printf(" %7s %7s %7s %7s %7s %7s %7s %7s\n", "open",
+		    "send", "snderr", "recv", "rcverr",
+		    "error", "sndicmp", "rcvicmp");
 		line = 19;
 	}
-	printf(" %7d %7d %7d %7d %7d %7d\n", stat_open, stat_send, stat_snderr,
-	    stat_recv, stat_rcverr, stat_error);
+	printf(" %7d %7d %7d %7d %7d %7d %7d %7d\n", stat_open,
+	    stat_send, stat_snderr, stat_recv, stat_rcverr,
+	    stat_error, stat_sndicmp, stat_rcvicmp);
 	if (event & EV_TIMEOUT) {
 		struct timeval	 to;
 
@@ -97,7 +100,7 @@ statistic_callback(int sig, short event, void *arg)
 		to.tv_usec = 0;
 		signal_add(evs, &to);
 		stat_send = stat_snderr = stat_recv = stat_rcverr =
-		    stat_error = 0;
+		    stat_error = stat_sndicmp = stat_rcvicmp = 0;
 	}
 }
 

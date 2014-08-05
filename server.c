@@ -335,6 +335,8 @@ icmp_callback(int s, short event, void *arg)
 	if (event & EV_READ) {
 		if (recv(s, rbuf, sizeof(rbuf), 0) == -1)
 			stat_error++;
+		else
+			stat_rcvicmp++;
 	}
 }
 
