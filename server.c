@@ -39,6 +39,7 @@ struct event_addr {
 
 ssize_t	 socket_recv(int, struct event_addr *);
 void	 socket_read(int, struct event_addr *);
+void	 socket_write(int, struct event_addr *);
 void	 socket_callback(int, short, void *);
 void	 icmp_callback(int, short, void *);
 
@@ -287,6 +288,30 @@ socket_read(int s, struct event_addr *ea)
 }
 
 void
+socket_write(int s, struct event_addr *ea)
+{
+	const char	 wbuf[] = "bar\n";
+	ssize_t		 n;
+
+	/*
+	 * The delay for the response is over.  Send it and
+	 * destroy the event structure.
+	 */
+	if (connected) {
+		n = send(s, wbuf, sizeof(wbuf) - 1, 0);
+		if (close(s) == -1)
+			err(1, "close");
+	} else {
+		n = sendto(s, wbuf, sizeof(wbuf) - 1, 0,
+		    (struct sockaddr *)&ea->ea_fsa, ea->ea_fsalen);
+	}
+	if (n == -1)
+		stat_snderr++;
+	else
+		stat_send++;
+}
+
+void
 socket_callback(int s, short event, void *arg)
 {
 	struct event_addr	*ea = arg;
@@ -295,25 +320,7 @@ socket_callback(int s, short event, void *arg)
 		socket_read(s, ea);
 	}
 	if (event & EV_TIMEOUT) {
-		const char	 wbuf[] = "bar\n";
-		ssize_t		 n;
-
-		/*
-		 * The delay for the response is over.  Send it and
-		 * destroy the event structure.
-		 */
-		if (connected) {
-			n = send(s, wbuf, sizeof(wbuf) - 1, 0);
-			if (close(s) == -1)
-				err(1, "close");
-		} else {
-			n = sendto(s, wbuf, sizeof(wbuf) - 1, 0,
-			    (struct sockaddr *)&ea->ea_fsa, ea->ea_fsalen);
-		}
-		if (n == -1)
-			stat_snderr++;
-		else
-			stat_send++;
+		socket_write(s, ea);
 		free(ea);
 		stat_open--;
 
