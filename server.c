@@ -59,7 +59,7 @@ main(int argc, char *argv[])
 	const char	*errstr;
 	int		 ch;
 
-	while ((ch = getopt(argc, argv, "46b:cn:or:sv")) != -1) {
+	while ((ch = getopt(argc, argv, "46b:cd:n:osv")) != -1) {
 		switch (ch) {
 		case '4':
 			family = PF_INET;
@@ -73,6 +73,12 @@ main(int argc, char *argv[])
 		case 'c':
 			connected = 1;
 			break;
+		case 'd':
+			delay_bound = strtonum(optarg, 1, 60, &errstr);
+			if (errstr)
+				errx(1, "delay boundary time is %s: %s",
+				    errstr, optarg);
+			break;
 		case 'n':
 			socket_number = strtonum(optarg, 1, 10000, &errstr);
 			if (errstr)
@@ -81,12 +87,6 @@ main(int argc, char *argv[])
 			break;
 		case 'o':
 			oneshot = 1;
-			break;
-		case 'r':
-			delay_bound = strtonum(optarg, 1, 60, &errstr);
-			if (errstr)
-				errx(1, "delay boundary time is %s: %s",
-				    errstr, optarg);
 			break;
 		case 's':
 			statistics = 1;
