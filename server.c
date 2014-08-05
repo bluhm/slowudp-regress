@@ -19,6 +19,11 @@
 #include <sys/time.h>
 #include <sys/uio.h>
 
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/ip_icmp.h>
+#include <netinet/udp.h>
+
 #include <err.h>
 #include <errno.h>
 #include <event.h>
@@ -52,7 +57,7 @@ const char		*host, *port;
 int			 family = PF_UNSPEC;
 unsigned int		 delay_bound = 10;
 unsigned int		 socket_number = 1000;
-unsigned int		 icmp_percentage = 0;
+unsigned int		 icmp_percentage;
 int			 connected, oneshot, verbose;
 char			 laddress[NI_MAXHOST], lservice[NI_MAXSERV];
 
@@ -293,10 +298,38 @@ socket_write(int s, struct event_addr *ea)
 	const char	 wbuf[] = "bar\n";
 	ssize_t		 n;
 
-	/*
-	 * The delay for the response is over.  Send it and
-	 * destroy the event structure.
-	 */
+	if (icmp_percentage && icmp_percentage > arc4random_uniform(100)) {
+		char		 packet[ICMP_MINLEN + sizeof(struct ip) +
+				    sizeof(struct udphdr)];
+		struct icmp	*icmp = (struct icmp *)packet;
+		struct ip	*ip = (struct ip *)(icmp + 1);
+		struct udphdr	*udp = (struct udphdr *)(ip + 1);
+
+		if (ea->ea_family != AF_INET)
+			return;
+		memset(packet, 0, sizeof(packet));
+		icmp = (struct icmp *)packet;
+		icmp->icmp_type = ICMP_UNREACH;
+		icmp->icmp_code = ICMP_UNREACH_FILTER_PROHIB;
+		ip->ip_v = 4;
+		ip->ip_hl = sizeof(struct ip) >> 2;
+		ip->ip_len = htons(sizeof(struct ip) + sizeof(struct udphdr));
+		ip->ip_p = IPPROTO_UDP;
+		ip->ip_src = ((struct sockaddr_in *)&ea->ea_faddr)->sin_addr;
+		ip->ip_dst =
+		    ((const struct sockaddr_in *)ea->ea_laddr)-> sin_addr;
+		udp->uh_sport = ((struct sockaddr_in *)&ea->ea_faddr)->sin_port;
+		udp->uh_dport =
+		    ((const struct sockaddr_in *)ea->ea_laddr)->sin_port;
+		udp->uh_ulen = htons(sizeof(struct udphdr));
+
+		if (sendto(sicmp, packet, sizeof(packet) - 1, 0,
+		    (struct sockaddr *)&ea->ea_faddr, ea->ea_faddrlen) == -1)
+			err(1, "sendto icmp");
+		stat_sndicmp++;
+		return;
+	}
+
 	if (connected) {
 		n = send(s, wbuf, sizeof(wbuf) - 1, 0);
 		if (close(s) == -1)
@@ -320,6 +353,10 @@ socket_callback(int s, short event, void *arg)
 		socket_read(s, ea);
 	}
 	if (event & EV_TIMEOUT) {
+		/*
+		 * The delay for the response is over.  Send it and
+		 * destroy the event structure.
+		 */
 		socket_write(s, ea);
 		free(ea);
 		stat_open--;
@@ -340,10 +377,9 @@ icmp_callback(int s, short event, void *arg)
 	char	 rbuf[1500];
 
 	if (event & EV_READ) {
-		if (recv(s, rbuf, sizeof(rbuf), 0) == -1)
-			stat_error++;
-		else
-			stat_rcvicmp++;
+		if (recv(sicmp, rbuf, sizeof(rbuf), 0) == -1)
+			err(1, "recv icmp");
+		stat_rcvicmp++;
 	}
 }
 
