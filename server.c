@@ -32,8 +32,7 @@
 
 struct event_addr {
 	struct event		 ea_event;
-	struct sockaddr_storage  ea_faddr;
-	const struct sockaddr   *ea_laddr;
+	struct sockaddr_storage  ea_laddr, ea_faddr;
 	int			 ea_family, ea_socktype, ea_protocol;
 	socklen_t                ea_laddrlen, ea_faddrlen;
 };
@@ -192,7 +191,8 @@ socket_read(int s, struct event_addr *ea)
 			if (setsockopt(s, SOL_SOCKET, SO_REUSEPORT,
 			    &optval, sizeof(optval)) == -1)
 				err(1, "setsockopt");
-			if (bind(s, ea->ea_laddr, ea->ea_laddrlen) == -1)
+			if (bind(s, (struct sockaddr *)&ea->ea_laddr,
+			    ea->ea_laddrlen) == -1)
 				err(1, "bind");
 			if (connect(s, (struct sockaddr *)&ef->ea_faddr,
 			    ef->ea_faddrlen) == -1) {
@@ -252,7 +252,7 @@ socket_callback(int s, short event, void *arg)
 
 	}
 	if (oneshot && stat_open == 0) {
-		for (ea = eladdr; ea->ea_laddr; ea++)
+		for (ea = eladdr; ea->ea_laddrlen; ea++)
 			event_del(&ea->ea_event);
 		free(eladdr);
 		statistic_destroy();
@@ -342,7 +342,6 @@ socket_init(void)
 	if (nsock == 0)
 		err(1, "%s local address %s, service %s",
 		    cause, laddress, lservice);
-	/* don't call freeaddrinfo(res0), addr is still referenced */
 
 	/*
 	 * Create an event structure for every socket that has been bound
@@ -353,7 +352,9 @@ socket_init(void)
 	for (n = 0; n < nsock; n++, ea++) {
 		event_set(&ea->ea_event, s[n], EV_READ|EV_PERSIST,
 		    socket_callback, ea);
-		ea->ea_laddr = laddr[n];
+		if (laddrlen[n] > sizeof(ea->ea_laddr))
+			err(1, "getaddrinfo: addrlen %u too big", laddrlen[n]);
+		memcpy(&ea->ea_laddr, laddr[n], laddrlen[n]);
 		ea->ea_laddrlen = laddrlen[n];
 		ea->ea_family = sfamily[n];
 		ea->ea_socktype = socktype[n];
@@ -366,6 +367,7 @@ socket_init(void)
 	free(sfamily);
 	free(socktype);
 	free(protocol);
+	freeaddrinfo(res0);
 }
 
 void
