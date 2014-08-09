@@ -213,9 +213,10 @@ socket_read(int s, struct event_addr *ea)
 		 */
 		if ((ef = malloc(sizeof(*ef))) == NULL)
 			err(1, "malloc");
-		ef->ea_laddrlen = ef->ea_faddrlen = 0;
+		ef->ea_family = ea->ea_family;
+		ef->ea_socktype = ea->ea_socktype;
+		ef->ea_protocol = ea->ea_protocol;
 
-		ef->ea_faddrlen = sizeof(ef->ea_faddr);
 		if (socket_recv(s, ef) == -1) {
 			stat_rcverr++;
 			free(ef);
@@ -241,7 +242,7 @@ socket_read(int s, struct event_addr *ea)
 			optval = 1;
 			if (setsockopt(s, SOL_SOCKET, SO_REUSEPORT,
 			    &optval, sizeof(optval)) == -1)
-				err(1, "setsockopt");
+				err(1, "setsockopt reuseport");
 			if (bind(s, (struct sockaddr *)&ea->ea_laddr,
 			    ea->ea_laddrlen) == -1)
 				err(1, "bind");
@@ -315,9 +316,9 @@ socket_init(void)
 {
 	struct event_addr	*ea;
 	struct addrinfo		 hints, *res, *res0;
-	int			 error;
-	int			 save_errno;
 	int			*s;
+	int			 optval = 1;
+	int			 error, save_errno;
 	unsigned int		 nsock, n;
 	const char		*cause = NULL;
 	const struct sockaddr	**laddr;
@@ -357,6 +358,14 @@ socket_init(void)
 			cause = "socket";
 			continue;
 		}
+		if (res->ai_family == AF_INET) {
+			if (setsockopt(s[nsock], IPPROTO_IP, IP_RECVDSTADDR,
+			    &optval, sizeof(optval)) == -1)
+				err(1, "setsockopt recvdstaddr");
+			if (setsockopt(s[nsock], IPPROTO_IP, IP_RECVDSTPORT,
+			    &optval, sizeof(optval)) == -1)
+				err(1, "setsockopt recvdstport");
+		}
 
 		error = getnameinfo(res->ai_addr, res->ai_addrlen,
 		    laddress, sizeof(laddress), lservice, sizeof(lservice),
@@ -365,11 +374,9 @@ socket_init(void)
 			errx(1, "getnameinfo local: %s", gai_strerror(error));
 
 		if (connected) {
-			int	 optval = 1;
-
 			if (setsockopt(s[nsock], SOL_SOCKET, SO_REUSEPORT,
 			    &optval, sizeof(optval)) == -1)
-				err(1, "setsockopt");
+				err(1, "setsockopt reuseport");
 		}
 		if (bind(s[nsock], res->ai_addr, res->ai_addrlen) == -1) {
 			cause = "bind";
