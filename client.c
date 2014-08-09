@@ -47,8 +47,7 @@ int			 family = PF_UNSPEC;
 unsigned int		 resend_bound = 10, wait_bound = 30;
 unsigned int		 socket_number = 1000;
 int			 connected, oneshot, verbose;
-struct sockaddr_storage	 laddr;
-const struct sockaddr	*faddr;
+struct sockaddr_storage	 laddr, faddr;
 socklen_t		 laddrlen, faddrlen;
 int			 socktype, protocol;
 char			 laddress[NI_MAXHOST], lservice[NI_MAXSERV],
@@ -150,7 +149,7 @@ socket_start(int s)
 		err(1, "socket family %d, socktype %d, protocol %d",
 		    family, socktype, protocol);
 	if (connected) {
-		if (connect(s, faddr, faddrlen) == -1)
+		if (connect(s, (struct sockaddr *)&faddr, faddrlen) == -1)
 			err(1, "connect foreign address %s, service %s",
 			    faddress, fservice);
 	} else {
@@ -177,7 +176,8 @@ socket_write(int s, struct event_time *et)
 	if (connected)
 		n = send(s, wbuf, sizeof(wbuf) - 1, 0);
 	else
-		n = sendto(s, wbuf, sizeof(wbuf) - 1, 0, faddr, faddrlen);
+		n = sendto(s, wbuf, sizeof(wbuf) - 1, 0,
+		    (struct sockaddr *)&faddr, faddrlen);
 	if (n == -1)
 		stat_snderr++;
 	else
@@ -291,7 +291,9 @@ socket_init(void)
 	if (verbose)
 		printf("%s foreign address %s, service %s\n",
 		    getprogname(), faddress, fservice);
-	faddr = res->ai_addr;
+	if (res->ai_addrlen > sizeof(faddr))
+		err(1, "getaddrinfo: addrlen %u too big", res->ai_addrlen);
+	memcpy(&faddr, res->ai_addr, res->ai_addrlen);
 	faddrlen = res->ai_addrlen;
 	family = res->ai_family;
 	socktype = res->ai_socktype;
