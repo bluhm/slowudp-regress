@@ -159,7 +159,7 @@ socket_recv(int s, struct event_addr *ea)
 	if ((n = recvmsg(s, &msg, 0)) == -1)
 		return (n);
 
-	ea->ea_faddrlen = sizeof(ea->ea_faddr);
+	ea->ea_faddrlen = ea->ea_faddr.ss_len;
 	if (msg.msg_flags & MSG_CTRUNC)
 		errx(1, "recvmsg: control message truncated");
 	for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
@@ -216,8 +216,7 @@ socket_read(int s, struct event_addr *ea)
 		ef->ea_laddrlen = ef->ea_faddrlen = 0;
 
 		ef->ea_faddrlen = sizeof(ef->ea_faddr);
-		if (recvfrom(s, rbuf, sizeof(rbuf), 0, (struct sockaddr *)
-		    &ef->ea_faddr, &ef->ea_faddrlen) == -1) {
+		if (socket_recv(s, ef) == -1) {
 			stat_rcverr++;
 			free(ef);
 			return;
