@@ -315,14 +315,14 @@ socket_write(int s, struct event_addr *ea)
 		ip->ip_hl = sizeof(struct ip) >> 2;
 		ip->ip_len = htons(sizeof(struct ip) + sizeof(struct udphdr));
 		ip->ip_p = IPPROTO_UDP;
-		ip->ip_src = ((struct sockaddr_in *)&ea->ea_faddr)->sin_addr;
-		ip->ip_dst = ((struct sockaddr_in *)&ea->ea_laddr)->sin_addr;
-		udp->uh_sport = ((struct sockaddr_in *)&ea->ea_faddr)->sin_port;
-		udp->uh_dport = ((struct sockaddr_in *)&ea->ea_laddr)->sin_port;
+		ip->ip_src = ((struct sockaddr_in *)&ea->ea_fsa)->sin_addr;
+		ip->ip_dst = ((struct sockaddr_in *)&ea->ea_lsa)->sin_addr;
+		udp->uh_sport = ((struct sockaddr_in *)&ea->ea_fsa)->sin_port;
+		udp->uh_dport = ((struct sockaddr_in *)&ea->ea_lsa)->sin_port;
 		udp->uh_ulen = htons(sizeof(struct udphdr));
 
 		if (sendto(sicmp, packet, sizeof(packet), 0,
-		    (struct sockaddr *)&ea->ea_faddr, ea->ea_faddrlen) == -1)
+		    (struct sockaddr *)&ea->ea_fsa, ea->ea_fsalen) == -1)
 			err(1, "sendto icmp");
 		stat_sndicmp++;
 		return;
