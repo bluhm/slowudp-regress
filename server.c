@@ -316,11 +316,9 @@ socket_write(int s, struct event_addr *ea)
 		ip->ip_len = htons(sizeof(struct ip) + sizeof(struct udphdr));
 		ip->ip_p = IPPROTO_UDP;
 		ip->ip_src = ((struct sockaddr_in *)&ea->ea_faddr)->sin_addr;
-		ip->ip_dst =
-		    ((const struct sockaddr_in *)ea->ea_laddr)->sin_addr;
+		ip->ip_dst = ((struct sockaddr_in *)&ea->ea_laddr)->sin_addr;
 		udp->uh_sport = ((struct sockaddr_in *)&ea->ea_faddr)->sin_port;
-		udp->uh_dport =
-		    ((const struct sockaddr_in *)ea->ea_laddr)->sin_port;
+		udp->uh_dport = ((struct sockaddr_in *)&ea->ea_laddr)->sin_port;
 		udp->uh_ulen = htons(sizeof(struct udphdr));
 
 		if (sendto(sicmp, packet, sizeof(packet), 0,
