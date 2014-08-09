@@ -33,9 +33,9 @@
 
 struct event_addr {
 	struct event		 ea_event;
-	struct sockaddr_storage  ea_laddr, ea_faddr;
+	struct sockaddr_storage  ea_lsa, ea_fsa;
 	int			 ea_family, ea_socktype, ea_protocol;
-	socklen_t                ea_laddrlen, ea_faddrlen;
+	socklen_t                ea_lsalen, ea_fsalen;
 };
 
 void	 usage(void);
@@ -150,8 +150,8 @@ socket_recv(int s, struct event_addr *ea)
 
 	iov.iov_base = rbuf;
 	iov.iov_len = sizeof(rbuf);
-	msg.msg_name = &ea->ea_faddr;
-	msg.msg_namelen = sizeof(ea->ea_faddr);
+	msg.msg_name = &ea->ea_fsa;
+	msg.msg_namelen = sizeof(ea->ea_fsa);
 	msg.msg_iov = &iov;
 	msg.msg_iovlen = 1;
 	msg.msg_control = &cmsgbuf.buf;
@@ -161,7 +161,7 @@ socket_recv(int s, struct event_addr *ea)
 	if ((n = recvmsg(s, &msg, 0)) == -1)
 		return (n);
 
-	ea->ea_faddrlen = ea->ea_faddr.ss_len;
+	ea->ea_fsalen = ea->ea_fsa.ss_len;
 	if (msg.msg_flags & MSG_CTRUNC)
 		errx(1, "recvmsg: control message truncated");
 	for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
@@ -169,27 +169,27 @@ socket_recv(int s, struct event_addr *ea)
 		if (cmsg->cmsg_len == CMSG_LEN(sizeof(struct in_addr)) &&
 		    cmsg->cmsg_level == IPPROTO_IP &&
 		    cmsg->cmsg_type == IP_RECVDSTADDR) {
-			((struct sockaddr_in *)&ea->ea_laddr)->sin_addr =
+			((struct sockaddr_in *)&ea->ea_lsa)->sin_addr =
 			    *(struct in_addr *)CMSG_DATA(cmsg);
-		    ea->ea_laddrlen = sizeof(struct sockaddr_in);
+		    ea->ea_lsalen = sizeof(struct sockaddr_in);
 		}
 		if (cmsg->cmsg_len == CMSG_LEN(sizeof(in_port_t)) &&
 		    cmsg->cmsg_level == IPPROTO_IP &&
 		    cmsg->cmsg_type == IP_RECVDSTPORT) {
-			((struct sockaddr_in *)&ea->ea_laddr)->sin_port =
+			((struct sockaddr_in *)&ea->ea_lsa)->sin_port =
 			    *(in_port_t *)CMSG_DATA(cmsg);
 		}
 		if (cmsg->cmsg_len == CMSG_LEN(sizeof(struct in6_pktinfo)) &&
 		    cmsg->cmsg_level == IPPROTO_IPV6 &&
 		    cmsg->cmsg_type == IPV6_PKTINFO) {
-			((struct sockaddr_in6 *)&ea->ea_laddr)->sin6_addr =
+			((struct sockaddr_in6 *)&ea->ea_lsa)->sin6_addr =
 			    ((struct in6_pktinfo *)CMSG_DATA(cmsg))->ipi6_addr;
-		    ea->ea_laddrlen = sizeof(struct sockaddr_in6);
+		    ea->ea_lsalen = sizeof(struct sockaddr_in6);
 		}
 		if (cmsg->cmsg_len == CMSG_LEN(sizeof(in_port_t)) &&
 		    cmsg->cmsg_level == IPPROTO_IPV6 &&
 		    cmsg->cmsg_type == IPV6_RECVDSTPORT) {
-			((struct sockaddr_in6 *)&ea->ea_laddr)->sin6_port =
+			((struct sockaddr_in6 *)&ea->ea_lsa)->sin6_port =
 			    *(in_port_t *)CMSG_DATA(cmsg);
 		}
 	}
@@ -203,7 +203,7 @@ socket_read(int s, struct event_addr *ea)
 	struct timeval	 to;
 	char		 rbuf[16];
 
-	if (ea->ea_faddrlen) {
+	if (ea->ea_fsalen) {
 		/*
 		 * The socket is already conntect to the foreign address.
 		 * Just read the packet.
@@ -258,11 +258,11 @@ socket_read(int s, struct event_addr *ea)
 			if (setsockopt(s, SOL_SOCKET, SO_REUSEPORT,
 			    &optval, sizeof(optval)) == -1)
 				err(1, "setsockopt reuseport");
-			if (bind(s, (struct sockaddr *)&ea->ea_laddr,
-			    ea->ea_laddrlen) == -1)
+			if (bind(s, (struct sockaddr *)&ea->ea_lsa,
+			    ea->ea_lsalen) == -1)
 				err(1, "bind");
-			if (connect(s, (struct sockaddr *)&ef->ea_faddr,
-			    ef->ea_faddrlen) == -1) {
+			if (connect(s, (struct sockaddr *)&ef->ea_fsa,
+			    ef->ea_fsalen) == -1) {
 				if (errno == EADDRINUSE) {
 					stat_error++;
 					if (close(s) == -1)
@@ -308,7 +308,7 @@ socket_callback(int s, short event, void *arg)
 				err(1, "close");
 		} else {
 			n = sendto(s, wbuf, sizeof(wbuf) - 1, 0,
-			    (struct sockaddr *)&ea->ea_faddr, ea->ea_faddrlen);
+			    (struct sockaddr *)&ea->ea_fsa, ea->ea_fsalen);
 		}
 		if (n == -1)
 			stat_snderr++;
@@ -319,7 +319,7 @@ socket_callback(int s, short event, void *arg)
 
 	}
 	if (oneshot && stat_open == 0) {
-		for (ea = eladdr; ea->ea_laddrlen; ea++)
+		for (ea = eladdr; ea->ea_lsalen; ea++)
 			event_del(&ea->ea_event);
 		free(eladdr);
 		statistic_destroy();
@@ -336,8 +336,8 @@ socket_init(void)
 	int			 error, save_errno;
 	unsigned int		 nsock, n;
 	const char		*cause = NULL;
-	const struct sockaddr	**laddr;
-	socklen_t		*laddrlen;
+	const struct sockaddr	**lsa;
+	socklen_t		*lsalen;
 	int			*sfamily, *socktype, *protocol;
 
 	/*
@@ -345,9 +345,9 @@ socket_init(void)
 	 */
 	if ((s = calloc(socket_number, sizeof(*s))) == NULL)
 		err(1, "calloc");
-	if ((laddr = calloc(socket_number, sizeof(*laddr))) == NULL)
+	if ((lsa = calloc(socket_number, sizeof(*lsa))) == NULL)
 		err(1, "calloc");
-	if ((laddrlen = calloc(socket_number, sizeof(*laddrlen))) == NULL)
+	if ((lsalen = calloc(socket_number, sizeof(*lsalen))) == NULL)
 		err(1, "calloc");
 	if ((sfamily = calloc(socket_number, sizeof(*sfamily))) == NULL)
 		err(1, "calloc");
@@ -415,8 +415,8 @@ socket_init(void)
 		if (verbose)
 			printf("%s local address %s, service %s\n",
 			    getprogname(), laddress, lservice);
-		laddr[nsock] = res->ai_addr;
-		laddrlen[nsock] = res->ai_addrlen;
+		lsa[nsock] = res->ai_addr;
+		lsalen[nsock] = res->ai_addrlen;
 		sfamily[nsock] = res->ai_family;
 		socktype[nsock] = res->ai_socktype;
 		protocol[nsock] = res->ai_protocol;
@@ -435,18 +435,18 @@ socket_init(void)
 	for (n = 0; n < nsock; n++, ea++) {
 		event_set(&ea->ea_event, s[n], EV_READ|EV_PERSIST,
 		    socket_callback, ea);
-		if (laddrlen[n] > sizeof(ea->ea_laddr))
-			err(1, "getaddrinfo: addrlen %u too big", laddrlen[n]);
-		memcpy(&ea->ea_laddr, laddr[n], laddrlen[n]);
-		ea->ea_laddrlen = laddrlen[n];
+		if (lsalen[n] > sizeof(ea->ea_lsa))
+			err(1, "getaddrinfo: addrlen %u too big", lsalen[n]);
+		memcpy(&ea->ea_lsa, lsa[n], lsalen[n]);
+		ea->ea_lsalen = lsalen[n];
 		ea->ea_family = sfamily[n];
 		ea->ea_socktype = socktype[n];
 		ea->ea_protocol = protocol[n];
 		event_add(&ea->ea_event, NULL);
 	}
 	free(s);
-	free(laddr);
-	free(laddrlen);
+	free(lsa);
+	free(lsalen);
 	free(sfamily);
 	free(socktype);
 	free(protocol);
