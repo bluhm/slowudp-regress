@@ -143,6 +143,8 @@ socket_recv(int s, struct event_addr *ea)
 		struct cmsghdr	 hdr;
 		unsigned char	 buf[CMSG_SPACE(sizeof(struct in_addr))+
 				    CMSG_SPACE(sizeof(in_port_t))];
+		unsigned char	 buf6[CMSG_SPACE(sizeof(struct in6_pktinfo))+
+				    CMSG_SPACE(sizeof(in_port_t))];
 	} cmsgbuf;
 	ssize_t		 n;
 
@@ -153,7 +155,7 @@ socket_recv(int s, struct event_addr *ea)
 	msg.msg_iov = &iov;
 	msg.msg_iovlen = 1;
 	msg.msg_control = &cmsgbuf.buf;
-	msg.msg_controllen = sizeof(cmsgbuf.buf);
+	msg.msg_controllen = sizeof(cmsgbuf);
 	msg.msg_flags = 0;
 
 	if ((n = recvmsg(s, &msg, 0)) == -1)
@@ -175,6 +177,19 @@ socket_recv(int s, struct event_addr *ea)
 		    cmsg->cmsg_level == IPPROTO_IP &&
 		    cmsg->cmsg_type == IP_RECVDSTPORT) {
 			((struct sockaddr_in *)&ea->ea_laddr)->sin_port =
+			    *(in_port_t *)CMSG_DATA(cmsg);
+		}
+		if (cmsg->cmsg_len == CMSG_LEN(sizeof(struct in6_pktinfo)) &&
+		    cmsg->cmsg_level == IPPROTO_IPV6 &&
+		    cmsg->cmsg_type == IPV6_PKTINFO) {
+			((struct sockaddr_in6 *)&ea->ea_laddr)->sin6_addr =
+			    ((struct in6_pktinfo *)CMSG_DATA(cmsg))->ipi6_addr;
+		    ea->ea_laddrlen = sizeof(struct sockaddr_in6);
+		}
+		if (cmsg->cmsg_len == CMSG_LEN(sizeof(in_port_t)) &&
+		    cmsg->cmsg_level == IPPROTO_IPV6 &&
+		    cmsg->cmsg_type == IPV6_RECVDSTPORT) {
+			((struct sockaddr_in6 *)&ea->ea_laddr)->sin6_port =
 			    *(in_port_t *)CMSG_DATA(cmsg);
 		}
 	}
@@ -358,13 +373,23 @@ socket_init(void)
 			cause = "socket";
 			continue;
 		}
-		if (res->ai_family == AF_INET) {
+		switch (res->ai_family) {
+		case AF_INET:
 			if (setsockopt(s[nsock], IPPROTO_IP, IP_RECVDSTADDR,
 			    &optval, sizeof(optval)) == -1)
 				err(1, "setsockopt recvdstaddr");
 			if (setsockopt(s[nsock], IPPROTO_IP, IP_RECVDSTPORT,
 			    &optval, sizeof(optval)) == -1)
 				err(1, "setsockopt recvdstport");
+			break;
+		case AF_INET6:
+			if (setsockopt(s[nsock], IPPROTO_IPV6, IPV6_RECVPKTINFO,
+			    &optval, sizeof(optval)) == -1)
+				err(1, "setsockopt recvpktinfo6");
+			if (setsockopt(s[nsock], IPPROTO_IPV6, IPV6_RECVDSTPORT,
+			    &optval, sizeof(optval)) == -1)
+				err(1, "setsockopt recvdstport6");
+			break;
 		}
 
 		error = getnameinfo(res->ai_addr, res->ai_addrlen,
