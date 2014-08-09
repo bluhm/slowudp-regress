@@ -54,7 +54,7 @@ PORT2 ?=	54321
 SSH =
 ONESHOT =	-o
 HOST =		localhost
-BIND =		-b 127.0.0.1
+BIND =
 STAMP_REMOTE =
 .else
 SSH =		ssh ${REMOTE_SSH}
