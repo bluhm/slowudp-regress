@@ -18,6 +18,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#include <sys/uio.h>
 
 #include <err.h>
 #include <errno.h>
@@ -39,6 +40,7 @@ struct event_addr {
 
 void	 usage(void);
 void	 socket_init(void);
+ssize_t	 socket_recv(int, struct event_addr *);
 void	 socket_read(int, struct event_addr *);
 void	 socket_callback(int, short, void *);
 
@@ -128,6 +130,56 @@ main(int argc, char *argv[])
 
 	event_dispatch();
 	return (0);
+}
+
+ssize_t
+socket_recv(int s, struct event_addr *ea)
+{
+	char		 rbuf[16];
+	struct iovec	 iov;
+	struct msghdr	 msg;
+	struct cmsghdr	*cmsg;
+	union {
+		struct cmsghdr	 hdr;
+		unsigned char	 buf[CMSG_SPACE(sizeof(struct in_addr))+
+				    CMSG_SPACE(sizeof(in_port_t))];
+	} cmsgbuf;
+	ssize_t		 n;
+
+	iov.iov_base = rbuf;
+	iov.iov_len = sizeof(rbuf);
+	msg.msg_name = &ea->ea_faddr;
+	msg.msg_namelen = sizeof(ea->ea_faddr);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_control = &cmsgbuf.buf;
+	msg.msg_controllen = sizeof(cmsgbuf.buf);
+	msg.msg_flags = 0;
+
+	if ((n = recvmsg(s, &msg, 0)) == -1)
+		return (n);
+
+	ea->ea_faddrlen = sizeof(ea->ea_faddr);
+	if (msg.msg_flags & MSG_CTRUNC)
+		errx(1, "recvmsg: control message truncated");
+	for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
+	    cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+		if (cmsg->cmsg_len == CMSG_LEN(sizeof(struct in_addr)) &&
+		    cmsg->cmsg_level == IPPROTO_IP &&
+		    cmsg->cmsg_type == IP_RECVDSTADDR) {
+			((struct sockaddr_in *)&ea->ea_laddr)->sin_addr =
+			    *(struct in_addr *)CMSG_DATA(cmsg);
+		    ea->ea_laddrlen = sizeof(struct sockaddr_in);
+		}
+		if (cmsg->cmsg_len == CMSG_LEN(sizeof(in_port_t)) &&
+		    cmsg->cmsg_level == IPPROTO_IP &&
+		    cmsg->cmsg_type == IP_RECVDSTPORT) {
+			((struct sockaddr_in *)&ea->ea_laddr)->sin_port =
+			    *(in_port_t *)CMSG_DATA(cmsg);
+		}
+	}
+
+	return (n);
 }
 
 void
