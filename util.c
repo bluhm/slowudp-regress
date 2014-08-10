@@ -27,6 +27,7 @@
 #include <err.h>
 #include <event.h>
 #include <limits.h>
+#include <paths.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -97,6 +98,8 @@ droppriv(void)
 {
 	const char	*sudoid, *errstr;
 
+	if (chroot(_PATH_VAREMPTY) == -1)
+		err(1, "chroot %s", _PATH_VAREMPTY);
 	if ((sudoid = getenv("SUDO_GID")) != NULL) {
 		gid_t		 gid;
 
