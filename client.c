@@ -166,18 +166,25 @@ void
 socket_write(int s, struct event_time *et)
 {
 	struct timeval	 to;
-	const char	 wbuf[] = "foo\n";
-	ssize_t		 n;
 
-	if (connected)
-		n = send(s, wbuf, sizeof(wbuf) - 1, 0);
-	else
-		n = sendto(s, wbuf, sizeof(wbuf) - 1, 0,
-		    (struct sockaddr *)&fsa, fsalen);
-	if (n == -1)
-		stat_snderr++;
-	else
-		stat_send++;
+	if (family == AF_INET && icmp_percentage &&
+	    icmp_percentage > arc4random_uniform(100)) {
+		icmp_send((struct sockaddr_in *)&lsa, lsalen,
+		    (struct sockaddr_in *)&fsa, fsalen);
+	} else {
+		const char	 wbuf[] = "foo\n";
+		ssize_t		 n;
+
+		if (connected)
+			n = send(s, wbuf, sizeof(wbuf) - 1, 0);
+		else
+			n = sendto(s, wbuf, sizeof(wbuf) - 1, 0,
+			    (struct sockaddr *)&fsa, fsalen);
+		if (n == -1)
+			stat_snderr++;
+		else
+			stat_send++;
+	}
 
 	/*
 	 * Chose a random resend timeout.  If it is greater than the wait

@@ -286,29 +286,27 @@ socket_read(int s, struct event_addr *ea)
 void
 socket_write(int s, struct event_addr *ea)
 {
-	const char	 wbuf[] = "bar\n";
-	ssize_t		 n;
-
-	if (icmp_percentage && icmp_percentage > arc4random_uniform(100)) {
-		if (ea->ea_family != AF_INET)
-			return;
+	if (ea->ea_family == AF_INET && icmp_percentage &&
+	    icmp_percentage > arc4random_uniform(100)) {
 		icmp_send((struct sockaddr_in *)&ea->ea_lsa, ea->ea_lsalen,
 		    (struct sockaddr_in *)&ea->ea_fsa, ea->ea_fsalen);
-		return;
-	}
-
-	if (connected) {
-		n = send(s, wbuf, sizeof(wbuf) - 1, 0);
-		if (close(s) == -1)
-			err(1, "close");
 	} else {
-		n = sendto(s, wbuf, sizeof(wbuf) - 1, 0,
-		    (struct sockaddr *)&ea->ea_fsa, ea->ea_fsalen);
+		const char	 wbuf[] = "bar\n";
+		ssize_t		 n;
+
+		if (connected) {
+			n = send(s, wbuf, sizeof(wbuf) - 1, 0);
+			if (close(s) == -1)
+				err(1, "close");
+		} else {
+			n = sendto(s, wbuf, sizeof(wbuf) - 1, 0,
+			    (struct sockaddr *)&ea->ea_fsa, ea->ea_fsalen);
+		}
+		if (n == -1)
+			stat_snderr++;
+		else
+			stat_send++;
 	}
-	if (n == -1)
-		stat_snderr++;
-	else
-		stat_send++;
 }
 
 void
