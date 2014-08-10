@@ -51,6 +51,24 @@ char			 laddress[NI_MAXHOST], lservice[NI_MAXSERV],
 			 faddress[NI_MAXHOST], fservice[NI_MAXSERV];
 
 void
+usage(void)
+{
+	(void)fprintf(stderr,
+	    "usage: %s [-46cosv] [-n num] [-r resend] [-w wait] host port\n"
+	    "    -4  IPv4 only\n"
+	    "    -6  IPv6 only\n"
+	    "    -c  use connected sockets to send packets\n"
+	    "    -n  number of simultanously connected sockets (%u)\n"
+	    "    -o  oneshot, do not reopen socket\n"
+	    "    -r  maximum resend timeout for the query in seconds (%u)\n"
+	    "    -s  print statistics every second\n"
+	    "    -v  be verbose, print address and service\n"
+	    "    -w  maximum wait timeout for the response in seconds (%u)\n",
+	    getprogname(), socket_number, resend_bound, wait_bound);
+	exit(2);
+}
+
+void
 setopt(int argc, char *argv[])
 {
 	const char	*errstr;
@@ -305,22 +323,4 @@ socket_init(void)
 	 */
 	for (n = 0; n < socket_number; n++)
 		socket_start(s);
-}
-
-void
-usage(void)
-{
-	(void)fprintf(stderr,
-	    "usage: %s [-46cosv] [-n num] [-r resend] [-w wait] host port\n"
-	    "    -4  IPv4 only\n"
-	    "    -6  IPv6 only\n"
-	    "    -c  use connected sockets to send packets\n"
-	    "    -n  number of simultanously connected sockets (%u)\n"
-	    "    -o  oneshot, do not reopen socket\n"
-	    "    -r  maximum resend timeout for the query in seconds (%u)\n"
-	    "    -s  print statistics every second\n"
-	    "    -v  be verbose, print address and service\n"
-	    "    -w  maximum wait timeout for the response in seconds (%u)\n",
-	    getprogname(), socket_number, resend_bound, wait_bound);
-	exit(2);
 }

@@ -51,6 +51,24 @@ int			 connected, oneshot, verbose;
 char			 laddress[NI_MAXHOST], lservice[NI_MAXSERV];
 
 void
+usage(void)
+{
+	(void)fprintf(stderr,
+	    "usage: %s [-46cosv] [-b bind] [-d delay] [-n num] port\n"
+	    "    -4  IPv4 only\n"
+	    "    -6  IPv6 only\n"
+	    "    -b  bind socket to address\n"
+	    "    -c  use connected sockets to send packets\n"
+	    "    -d  maximum delay for the response in seconds (%u)\n"
+	    "    -n  maximum number of simultanously bind sockets (%u)\n"
+	    "    -o  oneshot, do not reopen socket\n"
+	    "    -s  print statistics every second\n"
+	    "    -v  be verbose, print address and service\n",
+	    getprogname(), socket_number, delay_bound);
+	exit(2);
+}
+
+void
 setopt(int argc, char *argv[])
 {
 	const char	*errstr;
@@ -421,22 +439,4 @@ socket_init(void)
 	free(socktype);
 	free(protocol);
 	freeaddrinfo(res0);
-}
-
-void
-usage(void)
-{
-	(void)fprintf(stderr,
-	    "usage: %s [-46cosv] [-b bind] [-d delay] [-n num] port\n"
-	    "    -4  IPv4 only\n"
-	    "    -6  IPv6 only\n"
-	    "    -b  bind socket to address\n"
-	    "    -c  use connected sockets to send packets\n"
-	    "    -d  maximum delay for the response in seconds (%u)\n"
-	    "    -n  maximum number of simultanously bind sockets (%u)\n"
-	    "    -o  oneshot, do not reopen socket\n"
-	    "    -s  print statistics every second\n"
-	    "    -v  be verbose, print address and service\n",
-	    getprogname(), socket_number, delay_bound);
-	exit(2);
 }
