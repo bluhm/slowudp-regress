@@ -49,7 +49,6 @@ void	 socket_callback(int, short, void *);
 
 struct event_base	*eb;
 struct event_addr	*eladdr;
-int			 family = PF_UNSPEC;
 const char		*host, *port;
 int			 family = PF_UNSPEC;
 unsigned int		 delay_bound = 10;
