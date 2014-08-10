@@ -61,6 +61,13 @@ main(int argc, char *argv[])
 		err(1, "event_init");
 
 	/*
+	 * Create a raw socket to send and receive icmp error packets.
+	 * XXX IPv6 is not implemented.
+	 */
+	if (icmp_percentage)
+		icmp_init();
+
+	/*
 	 * Create and bind sockets and hook them into the event loop
 	 * for all server adresses.
 	 */

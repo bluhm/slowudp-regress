@@ -334,11 +334,4 @@ socket_init(void)
 	 */
 	for (n = 0; n < socket_number; n++)
 		socket_start(s);
-
-	/*
-	 * Create a raw socket to send and receive icmp error packets.
-	 * XXX IPv6 is not implemented.
-	 */
-	if (icmp_percentage)
-		icmp_init();
 }

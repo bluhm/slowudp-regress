@@ -491,11 +491,4 @@ socket_init(void)
 	free(socktype);
 	free(protocol);
 	freeaddrinfo(res0);
-
-	/*
-	 * Create a raw socket to send and receive icmp error packets.
-	 * XXX IPv6 is not implemented.
-	 */
-	if (icmp_percentage)
-		icmp_init();
 }
