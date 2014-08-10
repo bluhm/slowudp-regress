@@ -36,6 +36,7 @@
 #include "util.h"
 
 void	 droppriv(void);
+int	 in_cksum(const void *, size_t);
 void	 icmp_callback(int, short, void *);
 void	 statistic_callback(int, short, void *);
 
@@ -127,6 +128,21 @@ icmp_init(void)
 	event_add(&evicmp, NULL);
 }
 
+int
+in_cksum(const void *buf, size_t len)
+{
+	int sum = 0;
+
+	while (len) {
+		sum += *(const u_int16_t *)buf;
+		if (sum > 0xffff)
+			sum = (sum >> 16) + (sum & 0xffff);
+		buf = (const u_int16_t *)buf + 1;
+		len -= sizeof(u_int16_t);
+	}
+	return (~sum & 0xffff);
+}
+
 void
 icmp_send(struct sockaddr_in *lsa, socklen_t lsalen,
     struct sockaddr_in *fsa, socklen_t fsalen)
@@ -150,6 +166,7 @@ icmp_send(struct sockaddr_in *lsa, socklen_t lsalen,
 	udp->uh_sport = fsa->sin_port;
 	udp->uh_dport = lsa->sin_port;
 	udp->uh_ulen = htons(sizeof(struct udphdr));
+	icmp->icmp_cksum = in_cksum(packet, sizeof(packet));
 
 	if (sendto(sicmp, packet, sizeof(packet), 0,
 	    (struct sockaddr *)fsa, fsalen) == -1)
