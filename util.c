@@ -82,16 +82,19 @@ void
 statistic_callback(int sig, short event, void *arg)
 {
 	struct event	*evs = arg;
+	const char	*fmt;
 	static int	 line;
 
 	if (line-- == 0 || (event & EV_SIGNAL)) {
-		printf(" %7s %7s %7s %7s %7s %7s %7s %7s\n", "open",
-		    "send", "snderr", "recv", "rcverr",
+		fmt = icmp_percentage ? " %7s %7s %7s %7s %7s %7s %7s %7s\n" :
+		    " %7s %7s %7s %7s %7s %7s\n";
+		printf(fmt, "open", "send", "snderr", "recv", "rcverr",
 		    "error", "sndicmp", "rcvicmp");
 		line = 19;
 	}
-	printf(" %7d %7d %7d %7d %7d %7d %7d %7d\n", stat_open,
-	    stat_send, stat_snderr, stat_recv, stat_rcverr,
+	fmt = icmp_percentage ? " %7d %7d %7d %7d %7d %7d %7d %7d\n" :
+	    " %7d %7d %7d %7d %7d %7d\n";
+	printf(fmt, stat_open, stat_send, stat_snderr, stat_recv, stat_rcverr,
 	    stat_error, stat_sndicmp, stat_rcvicmp);
 	if (event & EV_TIMEOUT) {
 		struct timeval	 to;

@@ -24,6 +24,7 @@ void	 statistic_init(void);
 void	 statistic_destroy(void);
 
 extern unsigned int	 socket_number;
+extern unsigned int	 icmp_percentage;
 extern int		 statistics;
 extern unsigned int	 stat_open, stat_send, stat_snderr,
 			 stat_recv, stat_rcverr, stat_error,
