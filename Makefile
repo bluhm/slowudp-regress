@@ -71,8 +71,8 @@ SERVER =	${SUDO} ./sudpserver ${ONESHOT} -sv -n 1000 -i 90 -4 ${BIND}
 
 # copy client and server program to remote test machine
 kill:
-	${SSH} pkill sudpclient || true
-	pkill sudpserver || true
+	${SSH} ${SUDO} pkill sudpclient || true
+	${SUDO} pkill sudpserver || true
 
 # copy client and server program to remote test machine
 stamp-scp: sudpclient sudpserver
