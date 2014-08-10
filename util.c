@@ -23,11 +23,15 @@
 
 #include <err.h>
 #include <event.h>
+#include <limits.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "util.h"
 
+void	 droppriv(void);
 void	 icmp_callback(int, short, void *);
 void	 statistic_callback(int, short, void *);
 
@@ -66,6 +70,8 @@ main(int argc, char *argv[])
 	 */
 	if (icmp_percentage)
 		icmp_init();
+	if (geteuid() == 0)
+		droppriv();
 
 	/*
 	 * Create and bind sockets and hook them into the event loop
@@ -80,6 +86,31 @@ main(int argc, char *argv[])
 
 	event_dispatch();
 	return (0);
+}
+
+void
+droppriv(void)
+{
+	const char	*sudoid, *errstr;
+
+	if ((sudoid = getenv("SUDO_GID")) != NULL) {
+		gid_t		 gid;
+
+		gid = strtonum(sudoid, 1, UINT_MAX, &errstr);
+		if (errstr)
+			errx(1, "SUDO_UID is %s: %s", errstr, sudoid);
+		if (setgid(gid) == -1)
+			err(1, "setgid %u", gid);
+	}
+	if ((sudoid = getenv("SUDO_UID")) != NULL) {
+		uid_t		 uid;
+
+		uid = strtonum(sudoid, 1, UINT_MAX, &errstr);
+		if (errstr)
+			errx(1, "SUDO_UID is %s: %s", errstr, sudoid);
+		if (setuid(uid) == -1)
+			err(1, "setuid %u", uid);
+	}
 }
 
 void
