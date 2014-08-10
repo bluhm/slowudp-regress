@@ -20,6 +20,8 @@
 void	 usage(void);
 void	 setopt(int, char **);
 void	 icmp_init(void);
+void	 icmp_send(struct sockaddr_in *, socklen_t,
+	    struct sockaddr_in *, socklen_t);
 void	 icmp_destroy(void);
 void	 socket_init(void);
 void	 statistic_init(void);

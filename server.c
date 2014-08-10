@@ -19,11 +19,6 @@
 #include <sys/time.h>
 #include <sys/uio.h>
 
-#include <netinet/in.h>
-#include <netinet/ip.h>
-#include <netinet/ip_icmp.h>
-#include <netinet/udp.h>
-
 #include <err.h>
 #include <errno.h>
 #include <event.h>
@@ -295,32 +290,10 @@ socket_write(int s, struct event_addr *ea)
 	ssize_t		 n;
 
 	if (icmp_percentage && icmp_percentage > arc4random_uniform(100)) {
-		char		 packet[ICMP_MINLEN + sizeof(struct ip) +
-				    sizeof(struct udphdr)];
-		struct icmp	*icmp = (struct icmp *)packet;
-		struct ip	*ip = (struct ip *)(packet + ICMP_MINLEN);
-		struct udphdr	*udp = (struct udphdr *)(ip + 1);
-
 		if (ea->ea_family != AF_INET)
 			return;
-		memset(packet, 0, sizeof(packet));
-		icmp = (struct icmp *)packet;
-		icmp->icmp_type = ICMP_UNREACH;
-		icmp->icmp_code = ICMP_UNREACH_FILTER_PROHIB;
-		ip->ip_v = 4;
-		ip->ip_hl = sizeof(struct ip) >> 2;
-		ip->ip_len = htons(sizeof(struct ip) + sizeof(struct udphdr));
-		ip->ip_p = IPPROTO_UDP;
-		ip->ip_src = ((struct sockaddr_in *)&ea->ea_fsa)->sin_addr;
-		ip->ip_dst = ((struct sockaddr_in *)&ea->ea_lsa)->sin_addr;
-		udp->uh_sport = ((struct sockaddr_in *)&ea->ea_fsa)->sin_port;
-		udp->uh_dport = ((struct sockaddr_in *)&ea->ea_lsa)->sin_port;
-		udp->uh_ulen = htons(sizeof(struct udphdr));
-
-		if (sendto(sicmp, packet, sizeof(packet), 0,
-		    (struct sockaddr *)&ea->ea_fsa, ea->ea_fsalen) == -1)
-			err(1, "sendto icmp");
-		stat_sndicmp++;
+		icmp_send((struct sockaddr_in *)&ea->ea_lsa, ea->ea_lsalen,
+		    (struct sockaddr_in *)&ea->ea_fsa, ea->ea_fsalen);
 		return;
 	}
 
