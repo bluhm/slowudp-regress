@@ -39,10 +39,13 @@ void	 socket_write(int, struct event_time *);
 void	 socket_callback(int, short, void *);
 
 struct event_base	*eb;
+struct event		 evicmp;
+int			 sicmp;
 const char		*host, *port;
 int			 family = PF_UNSPEC;
 unsigned int		 resend_bound = 10, wait_bound = 30;
 unsigned int		 socket_number = 1000;
+unsigned int		 icmp_percentage;
 int			 connected, oneshot, verbose;
 struct sockaddr_storage	 lsa, fsa;
 socklen_t		 lsalen, fsalen;
@@ -54,10 +57,12 @@ void
 usage(void)
 {
 	(void)fprintf(stderr,
-	    "usage: %s [-46cosv] [-n num] [-r resend] [-w wait] host port\n"
+	    "usage: %s [-46cosv] [-i icmp] [-n num] [-r resend] [-w wait] "
+	    "host port\n"
 	    "    -4  IPv4 only\n"
 	    "    -6  IPv6 only\n"
 	    "    -c  use connected sockets to send packets\n"
+	    "    -i  percentage of requests that are icmp errors\n"
 	    "    -n  number of simultanously connected sockets (%u)\n"
 	    "    -o  oneshot, do not reopen socket\n"
 	    "    -r  maximum resend timeout for the query in seconds (%u)\n"
@@ -74,7 +79,7 @@ setopt(int argc, char *argv[])
 	const char	*errstr;
 	int		 ch;
 
-	while ((ch = getopt(argc, argv, "46cn:or:svw:")) != -1) {
+	while ((ch = getopt(argc, argv, "46ci:n:or:svw:")) != -1) {
 		switch (ch) {
 		case '4':
 			family = PF_INET;
@@ -84,6 +89,12 @@ setopt(int argc, char *argv[])
 			break;
 		case 'c':
 			connected = 1;
+			break;
+		case 'i':
+			icmp_percentage = strtonum(optarg, 0, 100, &errstr);
+			if (errstr)
+				errx(1, "icmp error percentage is %s: %s",
+				    errstr, optarg);
 			break;
 		case 'n':
 			socket_number = strtonum(optarg, 1, 10000, &errstr);
