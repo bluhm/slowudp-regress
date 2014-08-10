@@ -19,10 +19,13 @@
 
 void	 usage(void);
 void	 setopt(int, char **);
+void	 icmp_init(void);
+void	 icmp_destroy(void);
 void	 socket_init(void);
 void	 statistic_init(void);
 void	 statistic_destroy(void);
 
+extern int		 sicmp;
 extern unsigned int	 socket_number;
 extern unsigned int	 icmp_percentage;
 extern int		 statistics;

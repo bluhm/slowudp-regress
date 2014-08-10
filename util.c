@@ -15,8 +15,11 @@
  */
 
 #include <sys/resource.h>
+#include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/time.h>
+
+#include <netinet/in.h>
 
 #include <err.h>
 #include <event.h>
@@ -25,10 +28,14 @@
 
 #include "util.h"
 
+void	 icmp_callback(int, short, void *);
 void	 statistic_callback(int, short, void *);
 
 struct event_base	*eb;
+struct event		 evicmp;
 struct event		 evstat;
+int			 sicmp;
+unsigned int		 icmp_percentage;
 int			 statistics;
 unsigned int		 stat_open, stat_send, stat_snderr,
 			 stat_recv, stat_rcverr, stat_error,
@@ -66,6 +73,34 @@ main(int argc, char *argv[])
 
 	event_dispatch();
 	return (0);
+}
+
+void
+icmp_init(void)
+{
+	if ((sicmp = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) == -1)
+		err(1, "socket icmp");
+	event_set(&evicmp, sicmp, EV_READ|EV_PERSIST,
+	    icmp_callback, &evicmp);
+	event_add(&evicmp, NULL);
+}
+
+void
+icmp_callback(int s, short event, void *arg)
+{
+	char     rbuf[1500];
+
+	if (event & EV_READ) {
+		if (recv(sicmp, rbuf, sizeof(rbuf), 0) == -1)
+			err(1, "recv icmp");
+		stat_rcvicmp++;
+	}
+}
+
+void
+icmp_destroy(void)
+{
+	event_del(&evicmp);
 }
 
 void
