@@ -17,9 +17,13 @@
 #ifndef SLOWUDP_UTIL_H
 #define SLOWUDP_UTIL_H
 
+void	 usage(void);
+void	 setopt(int, char **);
+void	 socket_init(void);
 void	 statistic_init(void);
 void	 statistic_destroy(void);
 
+extern unsigned int	 socket_number;
 extern int		 statistics;
 extern unsigned int	 stat_open, stat_send, stat_snderr,
 			 stat_recv, stat_rcverr, stat_error;

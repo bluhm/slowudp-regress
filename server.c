@@ -14,7 +14,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -38,25 +37,22 @@ struct event_addr {
 	socklen_t                ea_lsalen, ea_fsalen;
 };
 
-void	 usage(void);
-void	 socket_init(void);
 ssize_t	 socket_recv(int, struct event_addr *);
 void	 socket_read(int, struct event_addr *);
 void	 socket_callback(int, short, void *);
 
 struct event_base	*eb;
 struct event_addr	*eladdr;
-int			 family = PF_UNSPEC;
 const char		*host, *port;
+int			 family = PF_UNSPEC;
 unsigned int		 delay_bound = 10;
 unsigned int		 socket_number = 1000;
 int			 connected, oneshot, verbose;
 char			 laddress[NI_MAXHOST], lservice[NI_MAXSERV];
 
-int
-main(int argc, char *argv[])
+void
+setopt(int argc, char *argv[])
 {
-	struct rlimit	 rlim;
 	const char	*errstr;
 	int		 ch;
 
@@ -104,32 +100,6 @@ main(int argc, char *argv[])
 	if (argc != 1)
 		usage();
 	port = argv[0];
-
-	if (getrlimit(RLIMIT_NOFILE, &rlim) == -1)
-		err(1, "getrlimit number of open files");
-	if (rlim.rlim_cur < socket_number + 10) {
-		rlim.rlim_cur = socket_number + 10;
-		if (setrlimit(RLIMIT_NOFILE, &rlim) == -1)
-			err(1, "setrlimit number of open files to %llu",
-			    rlim.rlim_cur);
-	}
-
-	if ((eb = event_init()) == NULL)
-		err(1, "event_init");
-
-	/*
-	 * Create and bind sockets and hook them into the event loop
-	 * for all server adresses.
-	 */
-	socket_init();
-
-	/*
-	 * Print statistic information periodically or at siginfo.
-	 */
-	statistic_init();
-
-	event_dispatch();
-	return (0);
 }
 
 ssize_t

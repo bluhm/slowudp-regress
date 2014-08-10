@@ -14,7 +14,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -35,8 +34,6 @@ struct event_time {
 	struct timeval	et_wait;
 };
 
-void	 usage(void);
-void	 socket_init(void);
 void	 socket_start(int);
 void	 socket_write(int, struct event_time *);
 void	 socket_callback(int, short, void *);
@@ -53,10 +50,9 @@ int			 socktype, protocol;
 char			 laddress[NI_MAXHOST], lservice[NI_MAXSERV],
 			 faddress[NI_MAXHOST], fservice[NI_MAXSERV];
 
-int
-main(int argc, char *argv[])
+void
+setopt(int argc, char *argv[])
 {
-	struct rlimit	 rlim;
 	const char	*errstr;
 	int		 ch;
 
@@ -108,32 +104,6 @@ main(int argc, char *argv[])
 		usage();
 	host = argv[0];
 	port = argv[1];
-
-	if (getrlimit(RLIMIT_NOFILE, &rlim) == -1)
-		err(1, "getrlimit number of open files");
-	if (rlim.rlim_cur < socket_number + 10) {
-		rlim.rlim_cur = socket_number + 10;
-		if (setrlimit(RLIMIT_NOFILE, &rlim) == -1)
-			err(1, "setrlimit number of open files to %llu",
-			    rlim.rlim_cur);
-	}
-
-	if ((eb = event_init()) == NULL)
-		err(1, "event_init");
-
-	/*
-	 * Find connection address, create and bind socket.
-	 * Send on connection sockets and start timeout.
-	 */
-	socket_init();
-
-	/*
-	 * Print statistic information periodically or at siginfo.
-	 */
-	statistic_init();
-
-	event_dispatch();
-	return (0);
 }
 
 void

@@ -14,9 +14,11 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <sys/resource.h>
 #include <sys/types.h>
 #include <sys/time.h>
 
+#include <err.h>
 #include <event.h>
 #include <signal.h>
 #include <stdio.h>
@@ -25,10 +27,45 @@
 
 void	 statistic_callback(int, short, void *);
 
+struct event_base	*eb;
 struct event		 evstat;
 int			 statistics;
 unsigned int		 stat_open, stat_send, stat_snderr,
 			 stat_recv, stat_rcverr, stat_error;
+
+int
+main(int argc, char *argv[])
+{
+	struct rlimit	 rlim;
+
+	setopt(argc, argv);
+
+	if (getrlimit(RLIMIT_NOFILE, &rlim) == -1)
+		err(1, "getrlimit number of open files");
+	if (rlim.rlim_cur < socket_number + 10) {
+		rlim.rlim_cur = socket_number + 10;
+		if (setrlimit(RLIMIT_NOFILE, &rlim) == -1)
+			err(1, "setrlimit number of open files to %llu",
+			    rlim.rlim_cur);
+	}
+
+	if ((eb = event_init()) == NULL)
+		err(1, "event_init");
+
+	/*
+	 * Create and bind sockets and hook them into the event loop
+	 * for all server adresses.
+	 */
+	socket_init();
+
+	/*
+	 * Print statistic information periodically or at siginfo.
+	 */
+	statistic_init();
+
+	event_dispatch();
+	return (0);
+}
 
 void
 statistic_init(void)
