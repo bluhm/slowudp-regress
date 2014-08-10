@@ -364,7 +364,8 @@ socket_callback(int s, short event, void *arg)
 		for (ea = eladdr; ea->ea_lsalen; ea++)
 			event_del(&ea->ea_event);
 		free(eladdr);
-		event_del(&evicmp);
+		if (icmp_percentage)
+			event_del(&evicmp);
 		statistic_destroy();
 	}
 }
