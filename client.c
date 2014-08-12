@@ -30,8 +30,8 @@
 #include "util.h"
 
 struct event_time {
-	struct event	et_event;
-	struct timeval	et_wait;
+	struct event	 et_event;
+	struct timeval	 et_wait;
 };
 
 void	 socket_start(int);
@@ -47,7 +47,7 @@ int			 connected, oneshot, verbose;
 struct sockaddr_storage	 lsa, fsa;
 socklen_t		 lsalen, fsalen;
 int			 socktype, protocol;
-char			 laddress[NI_MAXHOST], lservice[NI_MAXSERV],
+char			 laddress[NI_MAXHOST],
 			 faddress[NI_MAXHOST], fservice[NI_MAXSERV];
 
 void
@@ -149,9 +149,16 @@ socket_start(int s)
 			err(1, "connect foreign address %s, service %s",
 			    faddress, fservice);
 	} else {
+		switch (family) {
+		case AF_INET:
+			((struct sockaddr_in *)&lsa)->sin_port = 0;
+			break;
+		case AF_INET6:
+			((struct sockaddr_in6 *)&lsa)->sin6_port = 0;
+			break;
+		}
 		if (bind(s, (struct sockaddr *)&lsa, lsalen) == -1)
-			err(1, "bind local address %s, service %s",
-			    laddress, lservice);
+			err(1, "bind local address %s", laddress);
 	}
 	if ((et = malloc(sizeof(*et))) == NULL)
 		err(1, "malloc");
@@ -169,6 +176,9 @@ socket_write(int s, struct event_time *et)
 
 	if (family == AF_INET && icmp_percentage &&
 	    icmp_percentage > arc4random_uniform(100)) {
+		lsalen = sizeof(lsa);
+		if (getsockname(s, (struct sockaddr *)&lsa, &lsalen) == -1)
+			err(1, "getsockname");
 		icmp_send((struct sockaddr_in *)&lsa, lsalen,
 		    (struct sockaddr_in *)&fsa, fsalen);
 	} else {
@@ -314,23 +324,15 @@ socket_init(void)
 		lsalen = sizeof(lsa);
 		if (getsockname(s, (struct sockaddr *)&lsa, &lsalen) == -1)
 			err(1, "getsockname");
-		switch (family) {
-		case AF_INET:
-			((struct sockaddr_in *)&lsa)->sin_port = 0;
-			break;
-		case AF_INET6:
-			((struct sockaddr_in6 *)&lsa)->sin6_port = 0;
-			break;
-		}
 		error = getnameinfo((struct sockaddr *)&lsa, lsalen,
-		    laddress, sizeof(laddress), lservice, sizeof(lservice),
+		    laddress, sizeof(laddress), NULL, 0,
 		    NI_DGRAM | NI_NUMERICHOST | NI_NUMERICSERV);
 		if (error)
 			errx(1, "getnameinfo local: %s", gai_strerror(error));
 
 		if (verbose)
-			printf("%s local address %s, service %s\n",
-			    getprogname(), laddress, lservice);
+			printf("%s local address %s\n",
+			    getprogname(), laddress);
 	}
 	if (close(s) == -1)
 		err(1, "close");
