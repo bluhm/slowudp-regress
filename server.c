@@ -294,14 +294,11 @@ socket_write(int s, struct event_addr *ea)
 		const char	 wbuf[] = "bar\n";
 		ssize_t		 n;
 
-		if (connected) {
+		if (connected)
 			n = send(s, wbuf, sizeof(wbuf) - 1, 0);
-			if (close(s) == -1)
-				err(1, "close");
-		} else {
+		else
 			n = sendto(s, wbuf, sizeof(wbuf) - 1, 0,
 			    (struct sockaddr *)&ea->ea_fsa, ea->ea_fsalen);
-		}
 		if (n == -1)
 			stat_snderr++;
 		else
@@ -323,6 +320,10 @@ socket_callback(int s, short event, void *arg)
 		 * destroy the event structure.
 		 */
 		socket_write(s, ea);
+		if (connected) {
+			if (close(s) == -1)
+				err(1, "close");
+		}
 		free(ea);
 		stat_open--;
 
