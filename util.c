@@ -123,8 +123,7 @@ icmp_init(void)
 {
 	if ((sicmp = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) == -1)
 		err(1, "socket icmp");
-	event_set(&evicmp, sicmp, EV_READ|EV_PERSIST,
-	    icmp_callback, &evicmp);
+	event_set(&evicmp, sicmp, EV_READ|EV_PERSIST, icmp_callback, &evicmp);
 	event_add(&evicmp, NULL);
 }
 
