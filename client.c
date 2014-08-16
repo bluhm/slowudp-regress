@@ -41,6 +41,7 @@ void	 socket_callback(int, short, void *);
 struct event_base	*eb;
 const char		*host, *port;
 int			 family = PF_UNSPEC;
+unsigned int		 again_percentage;
 unsigned int		 resend_bound = 10, wait_bound = 30;
 unsigned int		 socket_number = 1000;
 int			 connected, oneshot, verbose;
@@ -77,13 +78,19 @@ setopt(int argc, char *argv[])
 	const char	*errstr;
 	int		 ch;
 
-	while ((ch = getopt(argc, argv, "46ci:n:or:svw:")) != -1) {
+	while ((ch = getopt(argc, argv, "46a:ci:n:or:svw:")) != -1) {
 		switch (ch) {
 		case '4':
 			family = PF_INET;
 			break;
 		case '6':
 			family = PF_INET6;
+			break;
+		case 'a':
+			again_percentage = strtonum(optarg, 0, 100, &errstr);
+			if (errstr)
+				errx(1, "request again percentage is %s: %s",
+				    errstr, optarg);
 			break;
 		case 'c':
 			connected = 1;
