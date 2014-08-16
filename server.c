@@ -326,7 +326,6 @@ socket_callback(int s, short event, void *arg)
 		}
 		free(ea);
 		stat_open--;
-
 	}
 	if (oneshot && stat_open == 0) {
 		for (ea = eladdr; ea->ea_lsalen; ea++)
