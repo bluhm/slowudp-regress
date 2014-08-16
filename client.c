@@ -54,10 +54,11 @@ void
 usage(void)
 {
 	(void)fprintf(stderr,
-	    "usage: %s [-46cosv] [-i icmp] [-n num] [-r resend] [-w wait] "
-	    "host port\n"
+	    "usage: %s [-46cosv] [-a again] [-i icmp] [-n num] [-r resend] "
+	    "[-w wait] host port\n"
 	    "    -4  IPv4 only\n"
 	    "    -6  IPv6 only\n"
+	    "    -a  percentage of responses that are requested again\n"
 	    "    -c  use connected sockets to send packets\n"
 	    "    -i  percentage of requests that are icmp errors\n"
 	    "    -n  number of simultanously connected sockets (%u)\n"
