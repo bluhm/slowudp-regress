@@ -170,7 +170,7 @@ socket_start(int s)
 	}
 	if ((et = malloc(sizeof(*et))) == NULL)
 		err(1, "malloc");
-	event_set(&et->et_event, s, EV_READ, socket_callback, et);
+	event_set(&et->et_event, s, EV_READ|EV_PERSIST, socket_callback, et);
 	et->et_wait.tv_sec = arc4random_uniform(wait_bound);
 	et->et_wait.tv_usec = 1 + arc4random_uniform(999999);
 	socket_write(s, et);
@@ -232,6 +232,10 @@ socket_callback(int s, short event, void *arg)
 			stat_rcverr++;
 		else
 			stat_recv++;
+
+		if (again_percentage &&
+		    again_percentage > arc4random_uniform(100))
+			return;
 	}
 	if (event & EV_TIMEOUT) {
 		/*
