@@ -64,7 +64,7 @@ BIND =		-b ${LOCAL_ADDR}
 STAMP_REMOTE =	stamp-scp stamp-pfctl
 .endif
 
-CLIENT =	${SSH} ${SUDO} ./sudpclient ${ONESHOT} -4v -i 10 -r 3 -w 10 -n 300
+CLIENT =	${SSH} ${SUDO} ./sudpclient ${ONESHOT} -4v -a 30 -i 10 -r 3 -w 10 -n 300
 SERVER =	${SUDO} ./sudpserver ${ONESHOT} -4sv -i 10 -n 1000 ${BIND}
 
 .PHONY: kill
