@@ -14,6 +14,7 @@ REMOTE_SSH ?=
 .if make (regress) || make (all)
 .BEGIN:
 	@echo
+	[ -z "${SUDO}" ] || ${SUDO} true
 	ssh -t ${REMOTE_SSH} ${SUDO} true
 	rm -f stamp-pfctl
 .endif
