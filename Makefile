@@ -83,8 +83,8 @@ stamp-scp: sudpclient sudpserver
 # load the pf rules into the kernel of the remote machine
 stamp-pfctl:
 	echo pass out proto udp to ${LOCAL_ADDR} port { ${PORT1} ${PORT2} } \
-	    divert-reply keep state \
-	    '(udp.first 10, udp.single 5, udp.multiple 60)' \
+	    keep state '(udp.first 10, udp.single 5, udp.multiple 60)' \
+	    divert-reply \
 	    | ssh ${REMOTE_SSH} ${SUDO} pfctl -a regress -f -
 	@date >$@
 
