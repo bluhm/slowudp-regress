@@ -47,8 +47,6 @@ struct event_addr	*eladdr;
 const char		*host, *port;
 int			 family = PF_UNSPEC;
 unsigned int		 delay_bound = 10;
-unsigned int		 socket_number = 1000;
-unsigned int		 payload_bound;
 unsigned int		 icmp_percentage;
 int			 connected, oneshot, verbose;
 char			 laddress[NI_MAXHOST], lservice[NI_MAXSERV];

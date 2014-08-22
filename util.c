@@ -45,6 +45,8 @@ struct event		 evicmp;
 struct event		 evstat;
 int			 sicmp;
 unsigned int		 icmp_percentage;
+unsigned int		 socket_number = 1000;;
+unsigned int		 payload_bound;
 int			 statistics;
 unsigned int		 stat_open, stat_send, stat_snderr,
 			 stat_recv, stat_rcverr, stat_error,

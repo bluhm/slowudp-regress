@@ -43,8 +43,6 @@ const char		*host, *port;
 int			 family = PF_UNSPEC;
 unsigned int		 again_percentage;
 unsigned int		 resend_bound = 10, wait_bound = 30;
-unsigned int		 socket_number = 1000;
-unsigned int		 payload_bound;
 int			 connected, oneshot, verbose;
 struct sockaddr_storage	 lsa, fsa;
 socklen_t		 lsalen, fsalen;
