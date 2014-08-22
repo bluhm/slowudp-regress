@@ -24,6 +24,7 @@ void	 icmp_send(struct sockaddr_in *, socklen_t,
 	    struct sockaddr_in *, socklen_t);
 void	 icmp_destroy(void);
 void	 socket_init(void);
+void	 socket_send(int, const char *, struct sockaddr *, size_t);
 void	 statistic_init(void);
 void	 statistic_destroy(void);
 

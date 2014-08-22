@@ -298,31 +298,11 @@ socket_write(int s, struct event_addr *ea)
 		icmp_send((struct sockaddr_in *)&ea->ea_lsa, ea->ea_lsalen,
 		    (struct sockaddr_in *)&ea->ea_fsa, ea->ea_fsalen);
 	} else {
-		const char	*wbuf = "bar\n";
-		size_t		 wlen = 4;
-		ssize_t		 n;
-
-		if (payload_bound) {
-			static char       *payload = NULL;
-
-			if (payload == NULL) {
-				payload = calloc(payload_bound, 1);
-				if (payload == NULL)
-					err(1, "calloc");
-			}
-			wbuf = payload;
-			wlen = arc4random_uniform(payload_bound + 1);
-		}
-
 		if (connected)
-			n = send(s, wbuf, wlen, 0);
+			socket_send(s, "bar\n", NULL, 0);
 		else
-			n = sendto(s, wbuf, wlen, 0,
+			socket_send(s, "bar\n",
 			    (struct sockaddr *)&ea->ea_fsa, ea->ea_fsalen);
-		if (n == -1)
-			stat_snderr++;
-		else
-			stat_send++;
 	}
 }
 

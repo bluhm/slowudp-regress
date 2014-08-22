@@ -194,6 +194,33 @@ icmp_destroy(void)
 }
 
 void
+socket_send(int s, const char *wbuf, struct sockaddr *fsa, size_t fsalen)
+{
+	size_t		 wlen;
+	ssize_t		 n;
+
+	if (payload_bound) {
+		static char       *payload = NULL;
+
+		if (payload == NULL)
+			if ((payload = calloc(payload_bound, 1)) == NULL)
+				err(1, "calloc");
+		wbuf = payload;
+		wlen = arc4random_uniform(payload_bound + 1);
+	} else
+		wlen = strlen(wbuf);
+
+	if (fsalen)
+		n = sendto(s, wbuf, wlen, 0, fsa, fsalen);
+	else
+		n = send(s, wbuf, wlen, 0);
+	if (n == -1)
+		stat_snderr++;
+	else
+		stat_send++;
+}
+
+void
 statistic_init(void)
 {
 	signal_set(&evstat, SIGINFO, statistic_callback, &evstat);

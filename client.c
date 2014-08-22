@@ -196,31 +196,11 @@ socket_write(int s, struct event_time *et)
 		icmp_send((struct sockaddr_in *)&lsa, lsalen,
 		    (struct sockaddr_in *)&fsa, fsalen);
 	} else {
-		const char	*wbuf = "foo\n";
-		size_t		 wlen = 4;
-		ssize_t		 n;
-
-		if (payload_bound) {
-			static char       *payload = NULL;
-
-			if (payload == NULL) {
-				payload = calloc(payload_bound, 1);
-				if (payload == NULL)
-					err(1, "calloc");
-			}
-			wbuf = payload;
-			wlen = arc4random_uniform(payload_bound + 1);
-		}
-
 		if (connected)
-			n = send(s, wbuf, wlen, 0);
+			socket_send(s, "foo\n", NULL, 0);
 		else
-			n = sendto(s, wbuf, wlen, 0,
+			socket_send(s, "foo\n",
 			    (struct sockaddr *)&fsa, fsalen);
-		if (n == -1)
-			stat_snderr++;
-		else
-			stat_send++;
 	}
 
 	/*
