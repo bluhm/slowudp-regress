@@ -55,8 +55,8 @@ void
 usage(void)
 {
 	(void)fprintf(stderr,
-	    "usage: %s [-46cosv] [-a again] [-i icmp] [-n num] [-r resend] "
-	    "[-w wait] host port\n"
+	    "usage: %s [-46cosv] [-a again] [-i icmp] [-n num] [-p payload] "
+	    "[-r resend] [-w wait] host port\n"
 	    "    -4  IPv4 only\n"
 	    "    -6  IPv6 only\n"
 	    "    -a  percentage of responses that are requested again\n"
@@ -64,6 +64,7 @@ usage(void)
 	    "    -i  percentage of requests that are icmp errors\n"
 	    "    -n  number of simultanously connected sockets (%u)\n"
 	    "    -o  oneshot, do not reopen socket\n"
+	    "    -p  maximum udp packet payload size\n"
 	    "    -r  maximum resend timeout for the query in seconds (%u)\n"
 	    "    -s  print statistics every second\n"
 	    "    -v  be verbose, print address and service\n"

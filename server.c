@@ -56,7 +56,8 @@ void
 usage(void)
 {
 	(void)fprintf(stderr,
-	    "usage: %s [-46cosv] [-b bind] [-d delay] [-i icmp] [-n num] port\n"
+	    "usage: %s [-46cosv] [-b bind] [-d delay] [-i icmp] [-n num] "
+	    " [-p payload] port\n"
 	    "    -4  IPv4 only\n"
 	    "    -6  IPv6 only\n"
 	    "    -b  bind socket to address\n"
@@ -65,6 +66,7 @@ usage(void)
 	    "    -i  percentage of responses that are icmp errors\n"
 	    "    -n  maximum number of simultanously bind sockets (%u)\n"
 	    "    -o  oneshot, do not reopen socket\n"
+	    "    -p  maximum udp packet payload size\n"
 	    "    -s  print statistics every second\n"
 	    "    -v  be verbose, print address and service\n",
 	    getprogname(), socket_number, delay_bound);
