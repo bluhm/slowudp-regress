@@ -48,6 +48,7 @@ const char		*host, *port;
 int			 family = PF_UNSPEC;
 unsigned int		 delay_bound = 10;
 unsigned int		 socket_number = 1000;
+unsigned int		 payload_bound;
 unsigned int		 icmp_percentage;
 int			 connected, oneshot, verbose;
 char			 laddress[NI_MAXHOST], lservice[NI_MAXSERV];
@@ -79,7 +80,7 @@ setopt(int argc, char *argv[])
 	const char	*errstr;
 	int		 ch;
 
-	while ((ch = getopt(argc, argv, "46b:cd:i:n:osv")) != -1) {
+	while ((ch = getopt(argc, argv, "46b:cd:i:n:op:sv")) != -1) {
 		switch (ch) {
 		case '4':
 			family = PF_INET;
@@ -113,6 +114,12 @@ setopt(int argc, char *argv[])
 			break;
 		case 'o':
 			oneshot = 1;
+			break;
+		case 'p':
+			payload_bound = strtonum(optarg, 0, 65508, &errstr);
+			if (errstr)
+				errx(1, "payload boundary is %s: %s",
+				    errstr, optarg);
 			break;
 		case 's':
 			statistics = 1;

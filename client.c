@@ -44,6 +44,7 @@ int			 family = PF_UNSPEC;
 unsigned int		 again_percentage;
 unsigned int		 resend_bound = 10, wait_bound = 30;
 unsigned int		 socket_number = 1000;
+unsigned int		 payload_bound;
 int			 connected, oneshot, verbose;
 struct sockaddr_storage	 lsa, fsa;
 socklen_t		 lsalen, fsalen;
@@ -79,7 +80,7 @@ setopt(int argc, char *argv[])
 	const char	*errstr;
 	int		 ch;
 
-	while ((ch = getopt(argc, argv, "46a:ci:n:or:svw:")) != -1) {
+	while ((ch = getopt(argc, argv, "46a:ci:n:op:r:svw:")) != -1) {
 		switch (ch) {
 		case '4':
 			family = PF_INET;
@@ -110,6 +111,12 @@ setopt(int argc, char *argv[])
 			break;
 		case 'o':
 			oneshot = 1;
+			break;
+		case 'p':
+			payload_bound = strtonum(optarg, 0, 65508, &errstr);
+			if (errstr)
+				errx(1, "payload boundary is %s: %s",
+				    errstr, optarg);
 			break;
 		case 'r':
 			resend_bound = strtonum(optarg, 1, 60, &errstr);
