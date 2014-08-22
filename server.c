@@ -116,7 +116,7 @@ setopt(int argc, char *argv[])
 			oneshot = 1;
 			break;
 		case 'p':
-			payload_bound = strtonum(optarg, 0, 65508, &errstr);
+			payload_bound = strtonum(optarg, 1, 65508, &errstr);
 			if (errstr)
 				errx(1, "payload boundary is %s: %s",
 				    errstr, optarg);
@@ -300,13 +300,26 @@ socket_write(int s, struct event_addr *ea)
 		icmp_send((struct sockaddr_in *)&ea->ea_lsa, ea->ea_lsalen,
 		    (struct sockaddr_in *)&ea->ea_fsa, ea->ea_fsalen);
 	} else {
-		const char	 wbuf[] = "bar\n";
+		const char	*wbuf = "bar\n";
+		size_t		 wlen = 4;
 		ssize_t		 n;
 
+		if (payload_bound) {
+			static char       *payload = NULL;
+
+			if (payload == NULL) {
+				payload = calloc(payload_bound, 1);
+				if (payload == NULL)
+					err(1, "calloc");
+			}
+			wbuf = payload;
+			wlen = arc4random_uniform(payload_bound + 1);
+		}
+
 		if (connected)
-			n = send(s, wbuf, sizeof(wbuf) - 1, 0);
+			n = send(s, wbuf, wlen, 0);
 		else
-			n = sendto(s, wbuf, sizeof(wbuf) - 1, 0,
+			n = sendto(s, wbuf, wlen, 0,
 			    (struct sockaddr *)&ea->ea_fsa, ea->ea_fsalen);
 		if (n == -1)
 			stat_snderr++;
