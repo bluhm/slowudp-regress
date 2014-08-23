@@ -29,12 +29,15 @@ CDIAGFLAGS +=	-Wall -Werror \
 		-Wcast-align \
 		-Wcast-qual \
 		-Wdeclaration-after-statement \
-		-Wextra -Wno-unused-parameter \
+		-Wextra \
 		-Wmissing-declarations \
 		-Wmissing-prototypes \
-		-Wshadow -Wpointer-arith \
+		-Wpointer-arith \
+		-Wshadow \
 		-Wsign-compare \
-		-Wstrict-prototypes
+		-Wstrict-prototypes \
+		-Wuninitialized \
+		-Wunused -Wno-unused-parameter
 DEBUG =		-g
 LDFLAGS =	-levent
 NOMAN =		yes
